@@ -1,0 +1,124 @@
+# =================================================================
+# ITAGAKI-SYSTEM V17.0: SUBCOMPOSITIONAL COHERENCE ENGINE
+# -----------------------------------------------------------------
+# Purpose: Rigorous Validation of Subcompositional Dominance
+# Logic: Testing if the core structural signal survives the removal 
+#        of the top volatile "system drivers."
+# Author: Tatsuki Itagaki
+# Copyright (c) 2026 Tatsuki Itagaki
+# License: MIT License
+# 
+# ACADEMIC CITATION:
+# If you use this software or its logic in your research, 
+# please cite the following works:
+# Ohta, T. (2011). DOI: 10.1007/s11004-011-9332-y
+# Itagaki, T (2024). DOI: 10.3390/microorganisms12071484
+# Itagaki, T (2025). DOI: 10.3390/nu17233681
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.21953.93284
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.35015.25762
+# =================================================================
+
+analyze_subcompositional_coherence <- function(Dataset, 
+                                               drop_ratio = 0.05, 
+                                               abundance_threshold = 0.000001) {
+  
+  # --- 1. INITIAL DATA PURIFICATION ---
+  P_raw <- as.matrix(Dataset)
+  # Basic filtering for numerical stability
+  valid_mask <- apply(P_raw, 2, function(x) all(x >= abundance_threshold))
+  if(sum(valid_mask) < 5) stop("CRITICAL ERROR: Insufficient components for coherence testing.")
+  
+  P_full <- P_raw[, valid_mask, drop = FALSE]
+  # Re-closing to Ensure Sum = 1
+  P_full <- sweep(P_full, 1, rowSums(P_full), "/")
+  comp_names <- colnames(P_full)
+  n_total <- ncol(P_full)
+
+  # --- 2. PHASE I: FULL-COMPOSITION BASELINE (CLR) ---
+  # Centered Log-Ratio Transformation (Aitchison Geometry)
+  log_full <- log(P_full)
+  clr_full <- sweep(log_full, 1, rowMeans(log_full), "-")
+  
+  # Metric: Component-wise Variance (Signal Strength)
+  var_full <- apply(clr_full, 2, var)
+  rank_full <- rank(var_full)
+
+  # --- 3. PHASE II: SYSTEM PERTURBATION (COMPONENT STRIPPING) ---
+  # Identify and drop the top "Volatile Drivers" 
+  # These are the components most likely to "drag" the composition
+  n_drop <- max(1, floor(n_total * drop_ratio))
+  drop_indices <- order(var_full, decreasing = TRUE)[1:n_drop]
+  dropped_names <- comp_names[drop_indices]
+  
+  P_reduced <- P_full[, -drop_indices, drop = FALSE]
+  # CRITICAL STEP: Re-closing the sub-composition
+  P_reduced <- sweep(P_reduced, 1, rowSums(P_reduced), "/")
+  remaining_names <- colnames(P_reduced)
+
+  # --- 4. PHASE III: SUB-COMPOSITION RE-ANALYSIS ---
+  log_red <- log(P_reduced)
+  clr_red <- sweep(log_red, 1, rowMeans(log_red), "-")
+  
+  var_red <- apply(clr_red, 2, var)
+  rank_red <- rank(var_red)
+
+  # --- 5. PHASE IV: MATHEMATICAL COHERENCE METRICS ---
+  # [A] Spearman Rank Correlation (Structural Stability)
+  # Do the remaining components maintain their relative variability?
+  rho_val <- cor(var_full[remaining_names], var_red, method = "spearman")
+  
+  # [B] Procrustes-like Geometric Displacement
+  # Measuring the distance between the two CLR configurations
+  # (Simpler version: Root Mean Square Error of ranks)
+  rank_rmse <- sqrt(mean((rank_full[remaining_names] - rank_red)^2))
+  max_possible_rmse <- sqrt(mean((1:length(remaining_names) - length(remaining_names):1)^2))
+  normalized_stability <- 1 - (rank_rmse / max_possible_rmse)
+
+  # --- 6. SCIENTIFIC DIAGNOSTIC REPORT ---
+  cat("\n", rep("=", 65), "\n", sep="")
+  cat("      ITAGAKI-SYSTEM V17.0: COHERENCE DIAGNOSTIC REPORT\n")
+  cat(rep("=", 65), "\n", sep="")
+  cat(sprintf("Analyzed Components      : %d\n", n_total))
+  cat(sprintf("Dropped Volatile Drivers : %d (%.1f%% of system)\n", n_drop, drop_ratio * 100))
+  cat(sprintf("Structural Correlation   : %.6f (Spearman's Rho)\n", rho_val))
+  cat(sprintf("Geometric Stability Index: %.6f (Normalized)\n", normalized_stability))
+  cat(rep("-", 65), "\n", sep="")
+
+  # Decision Logic: CoDA Compliance
+  if(rho_val > 0.98 && normalized_stability > 0.90) {
+    status <- "PASS (Strictly Coherent)"
+    conclusion <- "The system structure is invariant to component stripping."
+  } else if(rho_val > 0.90) {
+    status <- "PASS (Robust)"
+    conclusion <- "The system is stable, though slightly influenced by outliers."
+  } else {
+    status <- "FAIL (Incoherent / Subcompositional Dominance)"
+    conclusion <- "[WARNING] Analysis is heavily dependent on specific components."
+  }
+
+  cat(sprintf("COHERENCE STATUS : %s\n", status))
+  cat(sprintf("FINAL CONCLUSION : %s\n", conclusion))
+  cat(rep("=", 65), "\n", sep="")
+
+  # --- 7. VISUALIZATION OF ROBUSTNESS ---
+  par(mfrow=c(1,1), mar=c(5,5,4,2))
+  plot(var_full[remaining_names], var_red, 
+       pch=21, bg="#3498db", col="#2c3e50", cex=1.5,
+       xlab="Original CLR Variance (Full)", 
+       ylab="Re-calculated CLR Variance (Sub-comp)",
+       main="Subcompositional Invariance Plot")
+  abline(0, 1, lty=2, col="red")
+  grid()
+  legend("topleft", legend=paste("Rho =", round(rho_val, 5)), bty="n", text.font=2)
+
+  # Return results for downstream analysis
+  return(list(
+    rho = rho_val,
+    stability = normalized_stability,
+    status = status,
+    dropped = dropped_names,
+    cleansed_data = P_reduced
+  ))
+}
+
+result <- analyze_subcompositional_coherence(Dataset, drop_ratio = 0.10)
