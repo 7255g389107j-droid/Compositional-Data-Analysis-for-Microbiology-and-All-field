@@ -3,10 +3,22 @@
 # -----------------------------------------------------------------
 # Feature: Comprehensive Evaluation of Component-wise Contention
 # Logic: All-to-all pair comparison (Ohta's Asymmetry Matrix)
+# Developed by: Tatsuki Itagaki
+# Copyright (c) 2026 Tatsuki Itagaki
+# License: MIT License (https://opensource.org)
+# 
+# ACADEMIC CITATION:
+# If you use this software or its logic in your research, 
+# please cite the following works:
+# Ohta, T. (2011). DOI: 10.1007/s11004-011-9332-y
+# Itagaki, T (2024). DOI: 10.3390/microorganisms12071484
+# Itagaki, T (2025). DOI: 10.3390/nu17233681
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.21953.93284
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.35015.25762
 # =================================================================
 
 # --- [CORE ENGINE] ---
-evaluate_antagonistic_chaos <- function(Dataset, threshold = 0.00001) {
+evaluate_antagonistic_chaos <- function(Dataset, threshold = floor_i * 10) {
   
   # 1. PREPARATION & FILTERING
   d_m <- as.matrix(Dataset)
