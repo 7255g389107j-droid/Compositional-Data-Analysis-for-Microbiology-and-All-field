@@ -97,3 +97,20 @@ cat("----------------------------------------------------------\n")
 cat("DEFINITION: 'Normalized_Score' reflects how much a sample \n")
 cat("destabilizes the overall compositional baseline.\n")
 cat("==========================================================\n")
+
+# --- 5. AUTOMATED QUALITY ALERT SYSTEM ---
+critical_samples <- impact_df[impact_df$Normalized_Score > 2, ]
+
+if(nrow(critical_samples) > 0) {
+  cat("\n[!] PHYSICAL INTEGRITY ALERT\n")
+  cat("----------------------------------------------------------\n")
+  for(i in 1:nrow(critical_samples)) {
+    cat(sprintf("SAMPLE ID %s: [Score: %.3f]\n", 
+                critical_samples$Sample_ID[i], critical_samples$Normalized_Score[i]))
+    cat(" >> ACTION REQUIRED: Potential biological perturbation, measurement error,\n")
+    cat("    or data entry mismatch detected. Please verify the raw source.\n\n")
+  }
+} else {
+  cat("\n[PASS] No critical physical perturbers detected (Threshold = 2.0).\n")
+}
+cat("==========================================================\n")
