@@ -1,25 +1,52 @@
-# Compositional-Data-Analysis-for-Microbiology
-R framework for microbiome CoDA using Aitchison geometry and "Itagaki-System" logic. It treats zero as the absolute baseline, using the Poisson Noise Floor to classify taxa. Features: Reliability Mapping (Taxa validation), LOO-Stability Tracker (Sample QC), Subcompositional Coherence (Robustness), and Chaos Engine V8.0 (System diagnostics).
-# Compositional Data Analysis for Microbiology
+# ITAGAKI-SYSTEM FOR MICROBIOLOGY
+### Ultimate Physical-Diagnostic Framework for Compositional Data Analysis
 
-This R-based framework ensures the mathematical integrity of microbiome datasets by integrating Aitchison geometry with "Itagaki-System" logic. It avoids arbitrary zero-substitution, instead identifying the **Poisson Noise Floor** (1/Effective Library Size) to distinguish reliable signals from stochastic noise, where zero is treated as the absolute baseline.
+## Overview
+**ITAGAKI-SYSTEM** is a rigorous computational framework developed to overcome the fundamental limitations of compositional data analysis in biological sciences. Conventional statistical methods (PCA, Pearson Correlation, CLR-transform) often fail or produce spurious results when dealing with datasets characterized by **extreme scale gaps (10^1 to 10^11)** in sample total abundance (Effective Library Size).
 
-## Core Features
+This system bypasses mathematical illusions by anchoring all diagnostics to **Physical Reliability Mapping** and **Poisson Noise Floor** constraints. It ensures that biological interpretations are based on physical reality rather than sampling artifacts.
 
-*   **Reliability Mapping**: Calculates sample-specific noise floors to classify taxa as Reliable, Uncertain, or Absent.
-*   **LOO-Stability Tracker**: Detects samples that disproportionately perturb the system’s geometric and physical equilibrium.
-*   **Subcompositional Coherence**: Tests if structural signals survive the removal of volatile components, ensuring result robustness.
-*   **Chaos Engine (V8.0)**: Diagnoses system stability via Physical (invariance), Geometric (entropy), and Statistical (Ohta’s asymmetry) metrics.
+---
 
-This pipeline provides a rigorous diagnostic environment to validate compositional coherence and filter out false positives.
+## Core Modules
+
+### 1. [Ver.2] Physical Reliability Mapping
+Evaluates the quantitative validity of each component per sample by dynamically calculating the **Poisson Noise Floor (1/Eff_Lib)**.
+- **Key Feature:** Classification into *Reliable* (≥10x Floor), *Uncertain* (Presence only), and *Absent*.
+- **Purpose:** To prevent "noise-driven" conclusions in low-depth samples.
+
+### 2. [V8.1] Physical Deviation Diagnostic (Sp-Engine)
+A pure physical chaos engine that strips away geometric and statistical bias to evaluate system stability using **Sp (Physical Deviation)**.
+- **Key Feature:** System Status (STABLE / CRITICAL) based on the **Invariance Ratio (IR)**.
+- **Purpose:** To verify if observed variance exceeds theoretical physical limits.
+
+### 3. [V8.1-LOO] Physical Integrity & Stability Tracker
+A **Leave-One-Out (LOO)** perturbation analysis designed to identify specific samples (rows) that destabilize the physical integrity of the entire system.
+- **Key Feature:** **Normalized Score** generation. Scores > 2.0 trigger a "Physical Integrity Alert."
+- **Purpose:** Automated detection of measurement errors, data entry mismatches, or extreme biological shifts.
+
+### 4. [V18.0] Physical Coherence Engine (Integrated)
+Tests the **Subcompositional Invariance** of the system by stripping the top 10% "Physical Drivers" (high-IR components) and measuring the structural stability of the remaining core.
+- **Key Feature:** **Physical Rho** (IR-based Spearman rank correlation).
+- **Purpose:** To identify key biological drivers (columns) and verify the robustness of the underlying physical architecture.
+
+---
+
+## Why Physics over Statistics?
+In microbiology and nutrition science, the "Total" is often an artifact of the measurement process (e.g., sequencing depth). **ITAGAKI-SYSTEM** treats every sample as a unique physical entity with its own precision limit. By normalizing variance against the theoretical **Poisson limit**, the system enables fair comparison across samples with vastly different scales.
 
 ## Academic Citation
-If you use this software or its logic in your research, please cite:
-*   Ohta, T. (2011). DOI: 10.1007/s11004-011-9332-y
-*   Itagaki, T. (2024). DOI: 10.3390/microorganisms12071484
-*   Itagaki, T. (2025). DOI: 10.3390/nu17233681
-*   Itagaki, T. (2026). DOI: 10.13140/RG.2.2.21953.93284
-*   Itagaki, T. (2026). DOI: 10.13140/RG.2.2.35015.25762
+If you use this software or its logic in your research, please cite the following works:
+- **Itagaki, T (2024)**. DOI: 10.3390/microorganisms12071484
+- **Itagaki, T (2025)**. DOI: 10.3390/nu17233681
+- **Itagaki, T (2026)**. DOI: 10.13140/RG.2.2.21953.93284
+- **Itagaki, T (2026)**. DOI: 10.13140/RG.2.2.35015.25762
+
+---
 
 ## License
-MIT License - Copyright (c) 2026 Tatsuki Itagaki
+Copyright (c) 2026 Tatsuki Itagaki.  
+Licensed under the **MIT License**.
+
+**Developed by:** Tatsuki Itagaki  
+**Version:** 2026.4.27 (Production Ready)
