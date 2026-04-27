@@ -20,7 +20,7 @@
 
 analyze_subcompositional_coherence <- function(Dataset, 
                                                drop_ratio = 0.05, 
-                                               abundance_threshold = 0.000001) {
+                                               abundance_threshold = floor_i * 10) {
   
   # --- 1. INITIAL DATA PURIFICATION ---
   P_raw <- as.matrix(Dataset)
