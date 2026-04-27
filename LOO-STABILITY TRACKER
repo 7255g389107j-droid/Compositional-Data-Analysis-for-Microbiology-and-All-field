@@ -1,0 +1,126 @@
+# =================================================================
+# FULL-SCALE SENSITIVITY ENGINE: LOO-STABILITY TRACKER (ENHANCED)
+# Purpose: Detect "System Perturbers" via leave-one-out impact analysis
+# Developed by: Tatsuki Itagaki
+# Copyright (c) 2026 Tatsuki Itagaki
+# License: MIT License (https://opensource.org)
+# 
+# ACADEMIC CITATION:
+# If you use this software or its logic in your research, 
+# please cite the following works:
+# Ohta, T. (2011). DOI: 10.1007/s11004-011-9332-y
+# Itagaki, T (2024). DOI: 10.3390/microorganisms12071484
+# Itagaki, T (2025). DOI: 10.3390/nu17233681
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.21953.93284
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.35015.25762
+# =================================================================
+
+# --- 0. USER-DEFINED FILTERING & DYNAMIC SCALING ---
+set.seed(42) # For reproducibility
+min_abundance_threshold <- 0.00001 # User-defined strict threshold
+
+# Input: 'Dataset' must be a Proportion Matrix (Rows=Samples, Cols=Taxa)
+raw_data <- as.matrix(Dataset)
+n_s <- nrow(raw_data)
+
+# STRICT FILTERING: Only taxa present in ALL samples above threshold
+valid_taxa_mask <- apply(raw_data, 2, function(x) all(x >= min_abundance_threshold))
+if(sum(valid_taxa_mask) < 2) stop("Too few taxa passed filtering. Lower the threshold.")
+
+d_m <- raw_data[, valid_taxa_mask, drop = FALSE]
+taxa_ids <- colnames(d_m)
+if(is.null(taxa_ids)) taxa_ids <- paste0("Taxon_", 1:ncol(d_m))
+
+# [CRITICAL FIX] Dynamic Effective Library Size
+# Estimates the physical noise floor based on the actual data density
+avg_min_val <- mean(apply(d_m, 2, min))
+eff_lib <- 1 / avg_min_val 
+
+# --- 1. CORE WRAPPER FOR STABILITY METRICS ---
+calc_system_stability <- function(data_subset, lib_size) {
+  L <- log(data_subset)
+  P <- data_subset
+  
+  # [A] Physical: Min IR (Invariance Ratio)
+  obs_v <- apply(L, 2, var)
+  theo_v <- 1 / (colMeans(P) * lib_size)
+  ir_vals <- obs_v / (theo_v )
+  ir_min <- min(ir_vals)
+  
+  # [B] Geometric: Max PI (Purity Index)
+  vlr <- var(L)
+  pi_s <- 1 / (apply(outer(obs_v, obs_v, "+") - 2 * vlr, 1, median) )
+  pi_max <- max(pi_s)
+  
+  # [C] Statistical: Max Win Count (Ohta's Asymmetry)
+  win <- numeric(ncol(P))
+  for (j in 1:ncol(P)) {
+    r <- P / P[, j]
+    win[j] <- sum(apply(r, 2, function(x) sd(x)/mean(x)) < 
+                  apply(1/r, 2, function(x) sd(x)/mean(x)), na.rm=TRUE)
+  }
+  return(c(IR_Min = mean(ir_vals), PI_Max = pi_max, Win_Max = max(win))) # or return(c(IR_Min = ir_min, PI_Max = pi_max, Win_Max = max(win)))
+}
+
+# --- 2. EXECUTE LEAVE-ONE-OUT (LOO) ANALYSIS ---
+n_total <- nrow(d_m)
+baseline <- calc_system_stability(d_m, eff_lib)
+loo_results <- matrix(NA, nrow = n_total, ncol = 3)
+colnames(loo_results) <- c("Delta_IR", "Delta_PI", "Delta_Win")
+
+cat("Analyzing System Perturbations per Sample...\n")
+for(i in 1:n_total) {
+  # Calculate stability EXCLUDING sample 'i'
+  res_i <- calc_system_stability(d_m[-i, ], eff_lib)
+  
+  # DELTA: Positive means the system becomes STABLER when sample 'i' is removed
+  loo_results[i, "Delta_IR"] <- baseline["IR_Min"] - res_i["IR_Min"] 
+  loo_results[i, "Delta_PI"] <- res_i["PI_Max"] - baseline["PI_Max"]
+  loo_results[i, "Delta_Win"] <- res_i["Win_Max"] - baseline["Win_Max"]
+}
+
+# --- 3. DUAL-PANEL VISUALIZATION WITH FULL LABELS ---
+# Setup plotting area
+dev.new(width=14, height=8)
+par(mfrow=c(2,1), mar=c(6, 6, 4, 2))
+
+# PANEL 1: PHYSICAL STABILITY IMPACT (IR)
+y_ir <- loo_results[, "Delta_IR"]
+bp1 <- barplot(y_ir, 
+               main="Impact on Physical Stability (Delta IR)\nPositive = System improves when this sample is REMOVED",
+               col=ifelse(y_ir > 0, "#e74c3c", "#95a5a6"), 
+               border=NA, names.arg=1:n_total, las=1, cex.names=0.7,
+               ylab="Stability Gain (Lower IR is better)", xlab="Excluded Sample Index")
+# Add numerical labels on top/bottom of bars
+text(bp1, y_ir, labels=round(y_ir, 4), pos=ifelse(y_ir >= 0, 3, 1), cex=0.6, col="black", xpd=TRUE)
+abline(h=0, col="black", lwd=1)
+
+# PANEL 2: GEOMETRIC PURITY IMPACT (PI)
+y_pi <- loo_results[, "Delta_PI"]
+bp2 <- barplot(y_pi, 
+               main="Impact on Geometric Purity (Delta PI)\nPositive = Purity improves when this sample is REMOVED",
+               col=ifelse(y_pi > 0, "#3498db", "#95a5a6"), 
+               border=NA, names.arg=1:n_total, las=1, cex.names=0.7,
+               ylab="Purity Gain (Higher PI is better)", xlab="Excluded Sample Index")
+# Add numerical labels
+text(bp2, y_pi, labels=round(y_pi, 4), pos=ifelse(y_pi >= 0, 3, 1), cex=0.6, col="black", xpd=TRUE)
+abline(h=0, col="black", lwd=1)
+
+# --- 4. FINAL PERTURBATION RANKING ---
+perturber_score <- scale(loo_results[, "Delta_IR"]) + scale(loo_results[, "Delta_PI"])
+impact_df <- data.frame(
+  Sample_ID = 1:n_total,
+  IR_Impact = round(loo_results[,"Delta_IR"], 6),
+  PI_Impact = round(loo_results[,"Delta_PI"], 6),
+  Combined_Score = round(perturber_score, 3)
+)
+impact_df <- impact_df[order(-impact_df$Combined_Score), ]
+
+cat("\n==========================================================\n")
+cat("      STABILITY PERTURBATION REPORT (LEAVE-ONE-OUT)       \n")
+cat("==========================================================\n")
+print(head(impact_df, 15), row.names = FALSE)
+cat("----------------------------------------------------------\n")
+cat("DEFINITION: 'Combined_Score' reflects how much a sample \n")
+cat("destabilizes the overall compositional baseline.\n")
+cat("==========================================================\n")
