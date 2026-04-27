@@ -1,0 +1,102 @@
+# =================================================================
+# ITAGAKI-CHAOS-ENGINE (V8.0) - SCIENTIFIC DIAGNOSTIC SYSTEM
+# -----------------------------------------------------------------
+# Methodology: Triple Stability Engine (Physical, Geometric, Statistical)
+# Strictly adherence to Ohta (2011) and Itagaki (2026) logics.
+# Zero Policy: NO ZERO-SUBSTITUTION. Filters manual threshold.
+# Developed by: Tatsuki Itagaki
+# Copyright (c) 2026 Tatsuki Itagaki
+# License: MIT License (https://opensource.org)
+# 
+# ACADEMIC CITATION:
+# If you use this software or its logic in your research, 
+# please cite the following works:
+# Ohta, T. (2011). DOI: 10.1007/s11004-011-9332-y
+# Itagaki, T (2024). DOI: 10.3390/microorganisms12071484
+# Itagaki, T (2025). DOI: 10.3390/nu17233681
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.21953.93284
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.35015.25762
+# =================================================================
+
+diagnose_chaos_v8 <- function(Dataset) {
+  
+  # --- 1. STRICT FILTERING & INITIALIZATION ---
+  # Minimum abundance threshold: 0.00001 (1e-5)
+  # Policy: Only taxa present in ALL samples above threshold are used.
+  min_abundance_threshold <- 0.00001 #User-defined strict threshold
+  
+  raw_data <- as.matrix(Dataset)
+  n_s <- nrow(raw_data)
+  
+  # Filter: Keep columns where EVERY entry is >= threshold
+  valid_taxa_mask <- apply(raw_data, 2, function(x) all(x >= min_abundance_threshold))
+  
+  if(sum(valid_taxa_mask) < 2) {
+    stop("CRITICAL ERROR: Too few taxa passed the 0.00001 threshold. System cannot resolve basis.")
+  }
+  
+  # Extraction of valid components
+  d_m <- raw_data[, valid_taxa_mask, drop = FALSE]
+  taxa_ids <- colnames(d_m)
+  L <- log(d_m) # Pure log-transform without zero-substitution
+  
+  # --- 2. DYNAMIC PHYSICAL CONSTANTS ---
+  # Estimate Physical Noise Floor (Effective Library Size)
+  avg_min_val <- mean(apply(d_m, 2, min))
+  eff_lib <- 1 / avg_min_val 
+
+  # --- 3. THE TRIPLE CHAOS ENGINE ---
+  
+  # [A] PHYSICAL CHAOS (S_p): Invariance vs Poisson Floor
+  obs_v <- apply(L, 2, var)
+  theo_v <- 1 / (colMeans(d_m) * eff_lib)
+  ir <- obs_v / (theo_v )
+  S_p <- mean(log10(ir + 1)) 
+  
+  # [B] GEOMETRIC CHAOS (S_g): Aitchison Simplex Dissipation
+  vlr <- var(L)
+  eigen_vals <- eigen(vlr)$values
+  eigen_vals <- eigen_vals[eigen_vals > 1e-10] # Filter numerical noise
+  p_ev <- eigen_vals / sum(eigen_vals)
+  S_g <- -sum(p_ev * log(p_ev)) / log(length(p_ev))
+  
+  # [C] STATISTICAL CHAOS (S_s): Ohta's Competitive Anarchy
+  n_taxa <- ncol(d_m)
+  win_counts <- numeric(n_taxa)
+  for (j in 1:n_taxa) {
+    r_ratio <- d_m / d_m[, j]
+    # CV-Asymmetry check (Stable anchor identification)
+    win_counts[j] <- sum(apply(r_ratio, 2, function(x) sd(x)/mean(x)) < 
+                         apply(1/r_ratio, 2, function(x) sd(x)/mean(x)), na.rm=TRUE)
+  }
+  S_s <- 1 - (max(win_counts) / (n_taxa - 1))
+  
+  # --- 4. COMPOSITE INDEX & REPORTING ---
+  chaos_index <- (S_p + S_g + S_s) / 3
+  
+  status <- ifelse(chaos_index < 0.4, "STABLE (Laminar)", 
+            ifelse(chaos_index < 0.7, "TRANSITION (Perturbed)", "CRITICAL (Turbulent)"))
+  
+  cat("\n==========================================================\n")
+  cat("      ITAGAKI CHAOS DIAGNOSTIC REPORT (V8.0)              \n")
+  cat("==========================================================\n")
+  cat(sprintf("FINAL SYSTEM CHAOS INDEX : %.6f\n", chaos_index))
+  cat(sprintf("PHYSICAL DEVIATION (S_p) : %.6f\n", S_p))
+  cat(sprintf("GEOMETRIC ENTROPY  (S_g) : %.6f\n", S_g))
+  cat(sprintf("STATISTICAL DRIFT  (S_s) : %.6f\n", S_s))
+  cat("----------------------------------------------------------\n")
+  cat(sprintf("SYSTEM STATUS: %s\n", status))
+  cat(sprintf("VALID TAXA COUNT: %d / %d\n", n_taxa, ncol(raw_data)))
+  cat(sprintf("EFFECTIVE LIB SIZE: %.2e\n", eff_lib))
+  cat("==========================================================\n")
+
+  # Return detailed data frame for further analysis
+  return(list(
+    Summary = data.frame(Chaos_Index=chaos_index, Sp=S_p, Sg=S_g, Ss=S_s, Status=status),
+    Valid_Data = d_m,
+    IR_Values = ir,
+    Win_Counts = win_counts
+  ))
+}
+
+result <- diagnose_chaos_v8(Dataset)
