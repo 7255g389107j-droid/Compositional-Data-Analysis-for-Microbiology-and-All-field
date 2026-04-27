@@ -17,7 +17,7 @@
 
 # --- 0. USER-DEFINED FILTERING & DYNAMIC SCALING ---
 set.seed(42) # For reproducibility
-min_abundance_threshold <- 0.00001 # User-defined strict threshold
+min_abundance_threshold <- floor_i * 10
 
 # Input: 'Dataset' must be a Proportion Matrix (Rows=Samples, Cols=Taxa)
 raw_data <- as.matrix(Dataset)
