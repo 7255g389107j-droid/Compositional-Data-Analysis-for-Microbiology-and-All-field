@@ -21,9 +21,7 @@
 diagnose_chaos_v8 <- function(Dataset) {
   
   # --- 1. STRICT FILTERING & INITIALIZATION ---
-  # Minimum abundance threshold: 0.00001 (1e-5)
-  # Policy: Only taxa present in ALL samples above threshold are used.
-  min_abundance_threshold <- 0.00001 #User-defined strict threshold
+  min_abundance_threshold <- floor_i * 10
   
   raw_data <- as.matrix(Dataset)
   n_s <- nrow(raw_data)
@@ -32,7 +30,7 @@ diagnose_chaos_v8 <- function(Dataset) {
   valid_taxa_mask <- apply(raw_data, 2, function(x) all(x >= min_abundance_threshold))
   
   if(sum(valid_taxa_mask) < 2) {
-    stop("CRITICAL ERROR: Too few taxa passed the 0.00001 threshold. System cannot resolve basis.")
+    stop("CRITICAL ERROR: Too few taxa passed the 1e-20 threshold. System cannot resolve basis.")
   }
   
   # Extraction of valid components
