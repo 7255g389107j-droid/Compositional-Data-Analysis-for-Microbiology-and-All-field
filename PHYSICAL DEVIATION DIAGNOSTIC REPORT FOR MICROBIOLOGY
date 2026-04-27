@@ -22,7 +22,7 @@ diagnose_chaos_v8.1 <- function(Dataset) {
   # --- 1. STRICT FILTERING & INITIALIZATION ---
   min_abundance_threshold <- floor_i * 10
   
-  raw_data <- as.matrix(Dataset)
+  raw_data <- as.matrix(Dataset[, colSums(Dataset != 0) > 0])
   n_s <- nrow(raw_data)
   
   # Filter: Keep columns where EVERY entry is >= threshold
