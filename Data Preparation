@@ -17,7 +17,7 @@
 # =================================================================
 
 # --- 1. DATA PREPARATION ---
-P_raw <- as.matrix(Dataset)
+P_raw <- as.matrix(Dataset[, colSums(Dataset != 0) > 0])
 sample_ids <- rownames(P_raw)
 if(is.null(sample_ids)) sample_ids <- paste0("S_", 1:nrow(P_raw))
 n_s <- nrow(P_raw)
