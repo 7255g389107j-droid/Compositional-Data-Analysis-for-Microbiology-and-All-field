@@ -1,0 +1,16 @@
+# 1. Execute Principal Component Analysis (No scaling = Using Covariance Matrix)
+# This approach preserves the inherent structure of the data without fabricating 
+# data through the addition of infinitesimal dummy values.
+# Assumes 'Dataset' is a proportion matrix (Rows: Samples, Cols: Taxa)
+pca_res <- princomp(Dataset[, colSums(Dataset != 0) > 0], center = TRUE, cor = FALSE) # reliability_threshold <- floor_i * 10
+
+# 2. Plot scores for the first two principal components (PC1 and PC2)
+plot(pca_res$scores[,1:2],
+     xlab = "PC1", ylab = "PC2",
+     main = "PCA Score Plot (Covariance-based)")
+
+# To display sample names:
+text(pca_res$scores[,1:2], labels = rownames(Dataset), cex = 0.7, pos = 3)
+
+# To display points only:
+points(pca_res$scores[,1:2], pch = 19, col = "blue")
