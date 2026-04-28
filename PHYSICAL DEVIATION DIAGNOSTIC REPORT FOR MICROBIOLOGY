@@ -21,6 +21,8 @@
 diagnose_chaos_v8.1 <- function(Dataset) {
   
   # --- 1. STRICT FILTERING & INITIALIZATION ---
+  global_min <- min(raw_data[raw_data > 0])
+  floor_i <- global_min 
   min_abundance_threshold <- floor_i * 10
   
   raw_data <- as.matrix(Dataset[, colSums(Dataset != 0) > 0])
