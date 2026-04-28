@@ -96,7 +96,7 @@ for(i in 1:n_s) {
 cat("\n==========================================================\n")
 cat("      ITAGAKI SYSTEM V2026: FINAL DIAGNOSTIC REPORT       \n")
 cat("==========================================================\n")
-cat(sprintf("Global Noise Floor  : %.2e\n", floor_i))
+cat(sprintf("Global Noise Floor  : %.2e\n", min(sample_minima)))
 cat(sprintf("Reliable Taxa Count : %d\n", ncol(P_reliable)))
 cat(sprintf("System Status       : %s\n", ifelse(mean(sp_values) < 0.4, "LAMINAR", "TURBULENT")))
 cat("----------------------------------------------------------\n")
