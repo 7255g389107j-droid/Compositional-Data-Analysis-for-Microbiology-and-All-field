@@ -43,8 +43,11 @@
     stop("CRITICAL ERROR: No taxa passed the ULTRA-STRICT Policy A filter.")
   }
 
-cat("System Noise Floor (floor_i) :", sprintf("%.2e", 10/threshold_i), "\n")
-cat("Reliability Threshold (10x) :", sprintf("%.2e", threshold_i), "\n")
+max_floor <- max(sample_minima) 
+max_threshold <- max_floor * 10
+
+cat("System Noise Floor (Max floor) :", sprintf("%.2e", max_floor), "\n")
+cat("Reliability Threshold (Max 10x):", sprintf("%.2e", max_threshold), "\n")
 
 P_reliable <- P_raw[, valid_taxa_mask, drop = FALSE]
 
