@@ -1,0 +1,127 @@
+# =================================================================
+# ITAGAKI-SYSTEM V18.1: PHYSICAL COHERENCE ENGINE (FULL INTEGRATED)
+# -----------------------------------------------------------------
+# Feature: IR-based Subcompositional Invariance & Driver Identification
+# Logic: Strips top 10% IR drivers to test structural stability.
+# Developed by: Tatsuki Itagaki
+# Copyright (c) 2026 Tatsuki Itagaki
+# License: MIT License (https://opensource.org)
+# 
+# ACADEMIC CITATION:
+# If you use this software or its logic in your research, 
+# please cite the following works:
+# Itagaki, T (2024). DOI: 10.20944/preprints202402.0275.v3
+# Itagaki, T (2024). DOI: 10.3390/microorganisms12071484
+# Itagaki, T (2025). DOI: 10.3390/nu17233681
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.21953.93284
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.35015.25762
+# =================================================================
+
+analyze_physical_coherence_v18_integrated <- function(Dataset, 
+                                                     drop_ratio = 0.10, 
+                                                     floor_val = floor_i) {
+  
+  # --- 1. INITIALIZATION & DYNAMIC PHYSICS ---
+  P_raw <- as.matrix(Dataset)
+  n_s <- nrow(P_raw)
+  n_t <- ncol(P_raw)
+  
+  # --- STEP 1: INDIVIDUAL NOISE FLOOR MATRIX ---
+  sample_minima <- apply(P_raw, 1, function(x) min(x[x > 0]))
+  
+  # --- STEP 2: ALL-SAMPLE INDIVIDUAL VALIDATION ---
+  is_reliable_mat <- matrix(FALSE, nrow = n_s, ncol = n_t)
+  
+  for(i in 1:n_s) {
+    threshold_i <- sample_minima[i] * 10
+    is_reliable_mat[i, ] <- P_raw[i, ] >= threshold_i
+  }
+
+  valid_mask <- apply(is_reliable_mat, 2, all)
+  
+  if(sum(valid_mask) < 5) stop("CRITICAL ERROR: Insufficient components for coherence testing.")
+  
+  P_clean <- P_raw[, valid_mask, drop = FALSE]
+  eff_lib <- 1 / mean(apply(P_clean, 2, min))
+  
+  # --- 2. CORE IR CALCULATION FUNCTION ---
+  calc_ir <- function(dat, lib) {
+    L <- log(dat)
+    obs_v <- apply(L, 2, var)
+    theo_v <- 1 / (colMeans(dat) * lib)
+    return(obs_v / theo_v)
+  }
+  
+  # Baseline IR Analysis
+  ir_full <- calc_ir(P_clean, eff_lib)
+  comp_names <- names(ir_full)
+  
+  # --- 3. PHASE II: STRIPPING TOP PHYSICAL DRIVERS ---
+  n_drop <- max(1, floor(length(ir_full) * drop_ratio))
+  drop_indices <- order(ir_full, decreasing = TRUE)[1:n_drop]
+  dropped_names <- comp_names[drop_indices]
+  
+  P_reduced <- P_clean[, -drop_indices, drop = FALSE]
+  # Re-closing for subcompositional analysis
+  P_reduced <- sweep(P_reduced, 1, rowSums(P_reduced), "/")
+  
+  # Phase III: Re-calculating IR for Sub-composition
+  ir_red <- calc_ir(P_reduced, eff_lib)
+  remaining_names <- names(ir_red)
+  
+  # --- 4. COHERENCE METRICS ---
+  rho_val <- cor(ir_full[remaining_names], ir_red, method = "spearman")
+  
+  # --- 5. VISUALIZATION: THE SURVIVAL PLOT ---
+  par(mfrow=c(1,1), mar=c(5,5,4,2), bg = "#FDFDFD")
+  plot(rank(ir_full[remaining_names]), rank(ir_red), 
+       pch=21, bg="#E67E22", col="#D35400", cex=1.8, lwd=1.5,
+       xlab="Original IR Rank (Full Composition)", 
+       ylab="Recalculated IR Rank (Sub-composition)",
+       main=paste("Physical Coherence Survival Plot (Drop =", drop_ratio*100, "%)"))
+  abline(0, 1, lty=2, col="#7F8C8D", lwd=2)
+  grid(col="gray90")
+  legend("topleft", bty="n", text.font=2, cex=1.2,
+         legend=c(paste("Physical Rho:", round(rho_val, 6)),
+                  paste("Components Left:", length(remaining_names)),
+                  paste("Status:", ifelse(rho_val > 0.9, "STABLE", "SENSITIVE"))))
+
+  # --- 6. SCIENTIFIC DIAGNOSTIC REPORT ---
+  cat("\n==========================================================\n")
+  cat("      ITAGAKI-SYSTEM V18.0: PHYSICAL COHERENCE REPORT     \n")
+  cat("==========================================================\n")
+  cat(sprintf("Analyzed Components      : %d\n", length(ir_full)))
+  cat(sprintf("Dropped Drivers (Top IR) : %d (%.1f%% of system)\n", n_drop, drop_ratio * 100))
+  cat(sprintf("Physical Rho (IR-based)  : %.6f\n", rho_val))
+  cat("----------------------------------------------------------\n")
+  
+  if(rho_val > 0.95) {
+    status <- "PASS (Physically Coherent)"
+    conclusion <- "Laminar Architecture: The physical ranking remains invariant."
+  } else if(rho_val > 0.85) {
+    status <- "PASS (Robust)"
+    conclusion <- "Stable System: Core relationships are largely preserved."
+  } else {
+    status <- "FAIL (Physically Incoherent)"
+    conclusion <- "Turbulent Drivers Detected: System interpretation depends on outliers."
+  }
+  
+  cat(sprintf("COHERENCE STATUS : %s\n", status))
+  cat(sprintf("FINAL CONCLUSION : %s\n", conclusion))
+  cat("----------------------------------------------------------\n")
+
+  # --- 7. DRIVER IDENTIFICATION OUTPUT ---
+  cat("\nIDENTIFIED PHYSICAL DRIVERS (TOP IR COMPONENTS):\n")
+  drivers_summary <- data.frame(
+    Rank = 1:n_drop,
+    Taxon_Name = dropped_names,
+    IR_Value = round(ir_full[dropped_names], 4)
+  )
+  print(drivers_summary, row.names = FALSE)
+  cat("==========================================================\n")
+
+  return(list(rho = rho_val, dropped = dropped_names, cleansed_data = P_reduced, ir_full = ir_full))
+}
+
+# --- EXECUTION ---
+result <- analyze_physical_coherence_v18_integrated(Dataset, drop_ratio = 0.10)
