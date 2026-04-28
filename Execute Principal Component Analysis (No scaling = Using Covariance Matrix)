@@ -2,7 +2,7 @@
 # This approach preserves the inherent structure of the data without fabricating 
 # data through the addition of infinitesimal dummy values.
 # Assumes 'Dataset' is a proportion matrix (Rows: Samples, Cols: Taxa)
-pca_res <- princomp(Dataset[, colSums(Dataset != 0) > 0], center = TRUE, cor = FALSE) # reliability_threshold <- floor_i * 10
+pca_res <- princomp(Dataset[, colSums(Dataset != 0) > 0], center = TRUE, cor = FALSE) # or you can use the reliability_threshold <- floor_i * 10
 
 # 2. Plot scores for the first two principal components (PC1 and PC2)
 plot(pca_res$scores[,1:2],
