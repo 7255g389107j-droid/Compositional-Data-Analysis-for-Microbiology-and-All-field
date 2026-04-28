@@ -44,7 +44,7 @@ cat("Filtered Components         :", ncol(P_reliable), "/", ncol(P_raw), "\n")
 
 # --- 2. CORE STABILITY CALCULATION (IR & Sp) ---
 # Dynamic Effective Library Size for the reliable subset
-eff_lib <- 1 / floor_i
+eff_lib <- 1 / mean(apply(P_reliable, 2, min))
 
 # Log-transform reliable data
 L <- log(P_reliable)
