@@ -1,9 +1,32 @@
-# 1. Execute Principal Component Analysis (No scaling = Using Covariance Matrix)
+# Execute Principal Component Analysis (No scaling = Using Covariance Matrix)
 # This approach preserves the inherent structure of the data without fabricating 
 # data through the addition of infinitesimal dummy values.
 # Assumes 'Dataset' is a proportion matrix (Rows: Samples, Cols: Taxa)
-pca_res <- princomp(Dataset[, colSums(Dataset != 0) > 0], center = TRUE, cor = FALSE) # or you can use the reliability_threshold <- floor_i * 10
 
+# ---0.  Raw Dataset
+# pca_res <- princomp(Dataset[, colSums(Dataset != 0) > 0], center = TRUE, cor = FALSE) 
+
+# --- 1. DATA INITIALIZATION & PHYSICAL FILTERING ---
+# Assumes 'Dataset' is a proportion matrix (Rows: Samples, Cols: Taxa)
+P_raw <- as.matrix(Dataset[, colSums(Dataset != 0) > 0])
+sample_ids <- rownames(P_raw)
+n_s <- nrow(P_raw)
+
+# Calculate Global Noise Floor (floor_i) based on the physical limit
+global_min <- min(P_raw[P_raw > 0])
+floor_i <- global_min
+reliability_threshold <- floor_i * 10
+
+# Strict Filtering: Only keep taxa that are >= 10x Noise Floor in ALL samples
+# This eliminates "Uncertain Presence" (Physical Noise).
+valid_taxa_mask <- apply(P_raw, 2, function(x) all(x >= reliability_threshold))
+P_reliable <- P_raw[, valid_taxa_mask, drop = FALSE]
+
+if(ncol(P_reliable) < 2) stop("CRITICAL: Insufficient taxa passed the 10x Noise Floor.")
+
+pca_res <- princomp(P_reliable, center = TRUE, cor = FALSE)
+
+# --------------Biplot
 # 2. Plot scores for the first two principal components (PC1 and PC2)
 plot(pca_res$scores[,1:2],
      xlab = "PC1", ylab = "PC2",
