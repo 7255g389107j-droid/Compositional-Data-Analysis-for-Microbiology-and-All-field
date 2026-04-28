@@ -1,5 +1,6 @@
 # ITAGAKI-SYSTEM FOR MICROBIOLOGY
 ### Physical-Diagnostic Framework for Compositional Data Analysis on Microbiology
+**Compositional data** is defined as data in which variables are normalized within each sample and the sum of the variables is a constant.
 
 ## Overview
 **ITAGAKI-SYSTEM** is a rigorous computational framework developed to overcome the fundamental limitations of compositional data analysis in biological sciences. Conventional statistical methods (PCA, Pearson Correlation, CLR-transform) often fail or produce spurious results when dealing with datasets characterized by **extreme scale gaps (10^1 to 10^11)** in sample total abundance (Effective Library Size).
