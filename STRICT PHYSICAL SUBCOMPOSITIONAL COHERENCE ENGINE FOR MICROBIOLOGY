@@ -88,7 +88,7 @@ analyze_physical_coherence_v18_integrated <- function(Dataset,
 
   # --- 6. SCIENTIFIC DIAGNOSTIC REPORT ---
   cat("\n==========================================================\n")
-  cat("      ITAGAKI-SYSTEM V18.0: PHYSICAL COHERENCE REPORT     \n")
+  cat("      ITAGAKI-SYSTEM V18.1: PHYSICAL COHERENCE REPORT     \n")
   cat("==========================================================\n")
   cat(sprintf("Analyzed Components      : %d\n", length(ir_full)))
   cat(sprintf("Dropped Drivers (Top IR) : %d (%.1f%% of system)\n", n_drop, drop_ratio * 100))
