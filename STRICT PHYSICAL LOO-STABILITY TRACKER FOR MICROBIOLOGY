@@ -107,7 +107,7 @@ impact_df <- impact_df[order(-impact_df$Normalized_Score), ]
 cat("\n==========================================================\n")
 cat("      STABILITY PERTURBATION REPORT (LEAVE-ONE-OUT)       \n")
 cat("==========================================================\n")
-print(head(impact_df, 15), row.names = FALSE)
+print(head(impact_df, n_t), row.names = FALSE)
 cat("----------------------------------------------------------\n")
 cat("DEFINITION: 'Normalized_Score' reflects how much a sample \n")
 cat("destabilizes the overall compositional baseline.\n")
