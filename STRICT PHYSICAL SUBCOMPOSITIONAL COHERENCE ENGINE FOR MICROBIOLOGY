@@ -123,5 +123,27 @@ analyze_physical_coherence_v18_integrated <- function(Dataset,
   return(list(rho = rho_val, dropped = dropped_names, cleansed_data = P_reduced, ir_full = ir_full))
 }
 
-# --- EXECUTION ---
+# --- PDF EXPORT EXECUTION ---
+
+# 1. Open PDF device
+pdf("Itagaki_System_v18_Report.pdf", width = 10, height = 10)
+
+# 2. Run the analysis (The function's plot will automatically draw to the PDF)
+# Note: Ensure 'Dataset' is loaded in your environment before running this
 result <- analyze_physical_coherence_v18_integrated(Dataset, drop_ratio = 0.10)
+
+# 3. Add a secondary page for the Driver Table (Optional)
+plot.new()
+mtext("Identified Physical Drivers (Detailed List)", side = 3, line = -2, cex = 1.5, font = 2)
+# Capture console output and print it on the PDF page
+report_text <- capture.output(print(data.frame(
+  Rank = 1:length(result$dropped),
+  Driver = result$dropped,
+  IR_Value = round(result$ir_full[result$dropped], 4)
+), row.names = FALSE))
+text(x = 0, y = 0.9, labels = paste(report_text, collapse = "\n"), adj = c(0, 1), family = "mono", cex = 0.8)
+
+# 4. Close the device
+dev.off()
+
+cat("\n[SUCCESS] PDF report generated: Itagaki_System_v18_Report.pdf\n")
