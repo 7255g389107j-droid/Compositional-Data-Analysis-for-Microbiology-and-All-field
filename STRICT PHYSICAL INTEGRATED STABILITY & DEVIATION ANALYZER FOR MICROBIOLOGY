@@ -92,7 +92,7 @@ stability_report <- stability_report[order(-stability_report$Physical_Deviation_
 cat("\n==========================================================\n")
 cat("      ITAGAKI PHYSICAL STABILITY REPORT (FILTERED)        \n")
 cat("==========================================================\n")
-print(head(stability_report, 20), row.names = FALSE)
+print(head(stability_report, n_t), row.names = FALSE)
 cat("----------------------------------------------------------\n")
 cat("DEFINITION:\n")
 cat("  - Invariance_Ratio (IR): Ratio of observed vs theoretical noise.\n")
