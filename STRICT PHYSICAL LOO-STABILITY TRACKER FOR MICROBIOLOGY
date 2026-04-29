@@ -95,6 +95,27 @@ bp1 <- barplot(y_ir,
 text(bp1, y_ir, labels=round(y_ir, 4), pos=ifelse(y_ir >= 0, 3, 1), cex=0.6, col="black", xpd=TRUE)
 abline(h=0, col="black", lwd=1)
 
+# pdf
+pdf_filename <- "Stability_Perturbation_Report.pdf"
+# Setup plotting area
+pdf(file = pdf_filename, width = 14, height = 8)
+par(mfrow=c(1,1), mar=c(6, 6, 4, 2))
+
+# PANEL 1: PHYSICAL STABILITY IMPACT (IR)
+y_ir <- loo_results[, "Delta_IR"]
+bp1 <- barplot(y_ir, 
+               main="Impact on Physical Stability (Delta IR)\nPositive = System improves when this sample is REMOVED",
+               col=ifelse(y_ir > 0, "#e74c3c", "#95a5a6"), 
+               border=NA, names.arg=1:n_total, las=1, cex.names=0.7,
+               ylab="Stability Gain (Lower IR is better)", xlab="Excluded Sample Index")
+# Add numerical labels on top/bottom of bars
+text(bp1, y_ir, labels=round(y_ir, 4), pos=ifelse(y_ir >= 0, 3, 1), cex=0.6, col="black", xpd=TRUE)
+abline(h=0, col="black", lwd=1)
+
+dev.off()
+
+cat(paste0("\n[SUCCESS] PDF report has been generated: ", pdf_filename, "\n"))
+
 # --- 4. FINAL PERTURBATION RANKING ---
 perturber_score <- scale(loo_results[, "Delta_IR"])
 impact_df <- data.frame(
