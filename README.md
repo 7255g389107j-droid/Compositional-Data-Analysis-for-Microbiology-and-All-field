@@ -16,17 +16,12 @@ Evaluates the quantitative validity of each component per sample by dynamically 
 - **Key Feature:** Classification into *Reliable* (≥10x Floor), *Uncertain* (Presence only), and *Absent*.
 - **Purpose:** To prevent "noise-driven" conclusions in low-depth samples.
 
-### 2. [V8.1] Physical Deviation Diagnostic (Sp-Engine)
-A pure physical chaos engine that strips away geometric and statistical bias to evaluate system stability using **Sp (Physical Deviation)**.
-- **Key Feature:** System Status (STABLE / CRITICAL) based on the **Invariance Ratio (IR)**.
-- **Purpose:** To verify if observed variance exceeds theoretical physical limits.
-
-### 3. [V8.1-LOO] Physical Integrity & Stability Tracker
+### 2.  [V8.1-LOO] Physical Integrity & Stability Tracker
 A **Leave-One-Out (LOO)** perturbation analysis designed to identify specific samples (rows) that destabilize the physical integrity of the entire system.
 - **Key Feature:** **Normalized Score** generation. Scores > 2.0 trigger a "Physical Integrity Alert."
 - **Purpose:** Automated detection of measurement errors, data entry mismatches, or extreme biological shifts.
 
-### 4. [V18.0] Physical Coherence Engine (Integrated)
+### 3. [V18.1] Physical Coherence Engine (Integrated)
 Tests the **Subcompositional Invariance** of the system by stripping the top 10% "Physical Drivers" (high-IR components) and measuring the structural stability of the remaining core.
 - **Key Feature:** **Physical Rho** (IR-based Spearman rank correlation).
 - **Purpose:** To identify key biological drivers (columns) and verify the robustness of the underlying physical architecture.
