@@ -65,4 +65,4 @@ text(pca_res$scores[,1:2], labels = rownames(Dataset), cex = 0.7, pos = 3)
 points(pca_res$scores[,1:2], pch = 19, col = "blue")
 
 # summary
-summary(pca_res)
+pca_res$scores[,1:2]
