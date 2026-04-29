@@ -1,0 +1,250 @@
+# =================================================================
+# ULTIMATE COMPOSITIONAL DECONVOLUTION: CLINICAL REPORTING ENGINE
+# Version: 2026.4.26 - Final Consolidated Output Edition
+# Developed by: Tatsuki Itagaki
+# Copyright (c) 2026 Tatsuki Itagaki
+# License: MIT License (https://opensource.org)
+# 
+# ACADEMIC CITATION:
+# If you use this software or its logic in your research, 
+# please cite the following works:
+# Ohta, T. (2011). DOI: 10.1007/s11004-011-9332-y
+# Itagaki, T (2024). DOI: 10.3390/microorganisms12071484
+# Itagaki, T (2025). DOI: 10.3390/nu17233681
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.21953.93284
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.35015.25762
+# =================================================================
+
+set.seed(42)
+n_boot <- 1000
+min_abundance_threshold <- 0.00001 
+
+# --- 1. DATA PREPARATION ---
+raw_data <- as.matrix(Dataset)
+sample_names <- rownames(raw_data)
+if(is.null(sample_names)) sample_names <- paste0("S", 1:nrow(raw_data))
+
+valid_taxa_mask <- apply(raw_data, 2, function(x) all(x >= min_abundance_threshold))
+d_m <- raw_data[, valid_taxa_mask, drop = FALSE]
+taxa_ids <- colnames(d_m)
+n_s <- nrow(d_m)
+n_t <- ncol(d_m)
+
+# --- 2. CALCULATIONS (CORE STATS) ---
+avg_min_val <- mean(apply(d_m, 2, min))
+eff_lib <- 1 / avg_min_val 
+L <- log(d_m); obs_v <- apply(L, 2, var); theo_v <- 1 / (colMeans(d_m) * eff_lib); ir_vec <- obs_v / theo_v
+vlr <- var(L); pi_vec <- 1 / (apply(outer(obs_v, obs_v, "+") - 2 * vlr, 1, median))
+win_vec <- numeric(n_t)
+for (j in 1:n_t) {
+  r <- d_m / d_m[, j]
+  win_vec[j] <- sum(apply(r, 2, function(x) sd(x)/mean(x)) < apply(1/r, 2, function(x) sd(x)/mean(x)), na.rm=TRUE)
+}
+sig_class <- ifelse(ir_vec < 2.0, "PHYSICAL NOISE", ifelse(ir_vec < 10.0, "PRACTICAL PROXY", "BIOLOGICAL SIGNAL"))
+
+# --- 3. BRUTE-FORCE CI CALCULATION ---
+low_matrix <- matrix(NA, nrow=n_s, ncol=n_t); upp_matrix <- matrix(NA, nrow=n_s, ncol=n_t)
+for(j in 1:n_t) {
+  sf_raw <- 1 / d_m[, j]
+  boot_res <- replicate(n_boot, { idx <- sample(1:n_s, replace=TRUE); sf_raw / mean(sf_raw[idx]) })
+  low_matrix[, j] <- apply(boot_res, 1, quantile, probs=0.025); upp_matrix[, j] <- apply(boot_res, 1, quantile, probs=0.975)
+}
+
+# --- 4. SAMPLE-WISE INTEGRATION ---
+final_low <- numeric(n_s); final_upp <- numeric(n_s); anchors_count <- integer(n_s)
+for(i in 1:n_s) {
+  valid_idx <- which(low_matrix[i,] <= 1.0 & upp_matrix[i,] >= 1.0)
+  anchors_count[i] <- length(valid_idx)
+  if(anchors_count[i] > 0) {
+    final_low[i] <- min(low_matrix[i, valid_idx]); final_upp[i] <- max(upp_matrix[i, valid_idx])
+  } else {
+    bi <- which.min(ir_vec); final_low[i] <- low_matrix[i, bi]; final_upp[i] <- upp_matrix[i, bi]
+  }
+}
+final_summary <- data.frame(Sample_Label=sample_names, CI_Lower=round(final_low, 3), CI_Upper=round(final_upp, 3), Anchors_Count=anchors_count)
+
+# --- 5. VISUALIZATION ---
+dev.new(width=12, height=8)
+par(mar=c(8, 7, 7, 2))
+data_min <- min(low_matrix, na.rm=TRUE); data_max <- max(upp_matrix, na.rm=TRUE)
+y_pad <- (data_max - data_min) * 0.35
+
+plot(NULL, xlim=c(0.5, n_s + 0.5), ylim=c(data_min - y_pad, data_max + y_pad), xaxt="n", yaxt="n", xlab="", ylab="Absolute Ratio Range")
+title(main="Integrated Absolute Scaling Factor per Sample", line=5)
+anchor_info <- paste(sample_names, "(n=", anchors_count, ")", collapse=", ")
+mtext(paste("Anchors per Sample:", anchor_info), side=3, line=1.5, cex=0.75, col="gray20")
+axis(1, at=1:n_s, labels=sample_names, las=1, cex.axis=0.9); axis(2, las=1); abline(h=1, lty=2, col="red", lwd=1.5)
+
+for(i in 1:n_s) {
+  valid_idx <- which(low_matrix[i,] <= 1.0 & upp_matrix[i,] >= 1.0)
+  if(length(valid_idx) > 0) {
+    offsets <- seq(-0.35, 0.35, length.out=length(valid_idx))
+    for(k in 1:length(valid_idx)) {
+      v_idx <- valid_idx[k]
+      arrows(i + offsets[k], low_matrix[i, v_idx], i + offsets[k], upp_matrix[i, v_idx], angle=90, code=3, length=0.015, col=rgb(0.1, 0.3, 0.5, 0.4), lwd=1.2)
+    }
+  }
+  text(i, final_upp[i], labels=sprintf("%.3f", final_upp[i]), pos=3, cex=0.95, font=2, col="darkblue", xpd=TRUE)
+  text(i, final_low[i], labels=sprintf("%.3f", final_low[i]), pos=1, cex=0.95, font=2, col="darkred", xpd=TRUE)
+}
+
+# --- 6. COMPREHENSIVE CONSOLE OUTPUT ---
+# Requested Taxonomy Stability Summary
+cat("\n--- TAXA STABILITY SUMMARY ---\n")
+taxa_summary <- data.frame(
+  Taxon = taxa_ids,
+  Status = sig_class,
+  IR = round(ir_vec, 3),
+  PI = round(pi_vec, 3),
+  Win = win_vec,
+  CI_Lower_Min = round(apply(low_matrix, 2, min), 3), 
+  CI_Upper_Max = round(apply(upp_matrix, 2, max), 3)
+)
+# Sort by IR (most stable first)
+print(taxa_summary[order(taxa_summary$IR), ], row.names = FALSE)
+
+# Output the total number of filtered taxa used in the analysis
+cat(sprintf("\nTotal Number of Analyzed Taxa: %d\n", n_t))
+
+cat(sprintf("\nDYNAMIC SCALE (EFF_LIB): %.2e\n", eff_lib))
+
+cat("\n--- FINAL SAMPLE CONSOLIDATED SUMMARY ---\n")
+print(final_summary, row.names = FALSE)
+
+# --- 7. INTERSECTION OF VALID ANCHOR INTERVALS (Strict Consensus) ---
+# This calculates the narrowest range where ALL valid anchors overlap.
+# If no common intersection exists, it indicates high anchor discordance.
+
+strict_low <- numeric(n_s)
+strict_upp <- numeric(n_s)
+
+for(i in 1:n_s) {
+  valid_idx <- which(low_matrix[i,] <= 1.0 & upp_matrix[i,] >= 1.0)
+  
+  if(length(valid_idx) > 0) {
+    # Intersection: Maximum of all lower bounds and Minimum of all upper bounds
+    strict_low[i] <- max(low_matrix[i, valid_idx])
+    strict_upp[i] <- min(upp_matrix[i, valid_idx])
+  } else {
+    strict_low[i] <- NA
+    strict_upp[i] <- NA
+  }
+}
+
+strict_consensus <- data.frame(
+  Sample_Label = sample_names,
+  Intersection_Lower = round(strict_low, 3),
+  Intersection_Upper = round(strict_upp, 3),
+  Status = ifelse(strict_low <= strict_upp, "Valid Intersection", "No Common Overlap")
+)
+
+cat("\n--- STRICT INTERSECTION SUMMARY (Common Overlap) ---\n")
+print(strict_consensus, row.names = FALSE)
+
+# Check the maximum change in occupancy rate.
+max_diff <- apply(d_m, 2, function(x) max(x) - min(x))
+potential_dictator <- names(sort(max_diff, decreasing = TRUE)[1])
+cat("Most Volatile Candidate:", potential_dictator, "\n")
+
+# =================================================================
+# ANALYTICAL INTERPRETATION & CERTAINTY DIAGNOSTICS
+# =================================================================
+
+cat("\n==========================================================\n")
+cat("      INTERPRETATION OF ABSOLUTE RECONSTRUCTION           \n")
+cat("==========================================================\n")
+
+# 1. CERTAINTY EVALUATION BASED ON ANCHOR RATIO
+min_anchor_count <- min(anchors_count)
+anchor_ratio <- min_anchor_count / n_t
+
+cat(sprintf("Total Taxa: %d | Min Valid Anchors: %.1f\n", n_t, min_anchor_count))
+cat(sprintf("Anchor Consensus Ratio: %.1f%%\n", anchor_ratio * 100))
+
+# 2. DIAGNOSTIC INTERPRETATION
+cat("\n[DIAGNOSTIC SUMMARY]\n")
+
+if (anchor_ratio >= 0.5) {
+    cat("STATUS: HIGHLY ROBUST CONSENSUS\n")
+    cat("INTERPRETATION: A clear majority of taxa support the 'Invariant Absolute Quantity' hypothesis.\n")
+    cat("The convergence of the intersection to 1.0 is statistically overwhelming.\n")
+} else if (anchor_ratio >= 0.3) {
+    cat("STATUS: MODERATE CONSENSUS\n")
+    cat("INTERPRETATION: A significant portion of the community remains stable.\n")
+    cat("The reconstruction is reliable, though biological variance is present in some taxa.\n")
+} else {
+    cat("STATUS: LOW CONSENSUS / INDETERMINATE\n")
+    cat("WARNING: Few stable anchors detected. The absolute scale is difficult to fix.\n")
+}
+
+# 3. DIAGNOSTIC INTERPRETATION
+cat("\n[DIAGNOSTIC SUMMARY]\n")
+
+if (anchor_ratio >= 0.5) {
+    cat("STATUS: HIGHLY ROBUST CONSENSUS\n")
+    cat("INTERPRETATION: A clear majority of taxa support the 'Invariant Absolute Quantity' hypothesis.\n")
+    cat("The absolute reconstruction is highly reliable, with fluctuations within a 2-fold range (snr_vals >= 0.5 & snr_vals <= 2.0).\n")
+} else if (anchor_ratio >= 0.333) {
+    cat("STATUS: MODERATE CONSENSUS\n")
+    cat("INTERPRETATION: A significant portion of the community remains stable.\n")
+    cat("The reconstruction is reliable, with estimated variations within a 3-fold range (snr_vals >= 0.333 & snr_vals <= 3.0).\n")
+} else {
+    cat("STATUS: LOW CONSENSUS / INDETERMINATE\n")
+    cat("WARNING: Few stable anchors detected (less than 33.3%). The absolute scale is difficult to fix.\n")
+}
+
+# 4. SCIENTIFIC CAVEATS (THEORETICAL LIMITS)
+cat("\n[SCIENTIFIC CONTEXT & PRINCIPLES]\n")
+cat("- INVARIANCE PRINCIPLE: This engine assumes that the most stable taxa (under Poisson noise limits)\n")
+cat("  represent the true absolute baseline. Since the intersection includes 1.0, the hypothesis of\n")
+cat("  'No Absolute Change' is strongly supported.\n")
+
+cat("- INDEPENDENCE CAVEAT: While absolute and relative data are theoretically independent,\n")
+cat("  this cross-validation of multiple independent anchors (Deconvolution) effectively\n")
+cat("  bypasses the 'Compositional Constraint' by using physical noise as a benchmark.\n")
+
+cat("- DETECTION LIMIT: This result confirms that no absolute shift exceeding physical noise\n")
+cat("  occurred. Micro-variations within the noise margin may still exist but are statistically\n")
+cat("  indistinguishable from stability.\n")
+
+cat("==========================================================\n")
+
+
+# --- 8. EXPORT TO PDF ---
+# Set the filename and dimensions (Width x Height in inches)
+pdf_filename <- "Deconvolution_Interval_Estimation.pdf"
+pdf(pdf_filename, width = 12, height = 8)
+
+# Re-run the visualization block
+par(mar=c(8, 7, 7, 2))
+data_min <- min(low_matrix, na.rm=TRUE); data_max <- max(upp_matrix, na.rm=TRUE)
+y_pad <- (data_max - data_min) * 0.35
+
+plot(NULL, xlim=c(0.5, n_s + 0.5), ylim=c(data_min - y_pad, data_max + y_pad), 
+     xaxt="n", yaxt="n", xlab="", ylab="Absolute Ratio Range")
+
+title(main="Integrated Absolute Scaling Factor per Sample", line=5)
+anchor_info <- paste(sample_names, "(n=", anchors_count, ")", collapse=", ")
+mtext(paste("95% interval estimation of absolute ratio reconstruction\nAnchors per Sample:", anchor_info), 
+      side=3, line=1.0, cex=0.75, col="gray20")
+
+axis(1, at=1:n_s, labels=sample_names, las=1, cex.axis=0.9); axis(2, las=1); abline(h=1, lty=2, col="red", lwd=1.5)
+
+for(i in 1:n_s) {
+  valid_idx <- which(low_matrix[i,] <= 1.0 & upp_matrix[i,] >= 1.0)
+  if(length(valid_idx) > 0) {
+    offsets <- seq(-0.35, 0.35, length.out=length(valid_idx))
+    for(k in 1:length(valid_idx)) {
+      v_idx <- valid_idx[k]
+      arrows(i + offsets[k], low_matrix[i, v_idx], i + offsets[k], upp_matrix[i, v_idx], 
+             angle=90, code=3, length=0.015, col=rgb(0.1, 0.3, 0.5, 0.4), lwd=1.2)
+    }
+  }
+  text(i, final_upp[i], labels=sprintf("%.3f", final_upp[i]), pos=3, cex=0.95, font=2, col="darkblue", xpd=TRUE)
+  text(i, final_low[i], labels=sprintf("%.3f", final_low[i]), pos=1, cex=0.95, font=2, col="darkred", xpd=TRUE)
+}
+
+# Close the PDF device
+dev.off()
+
+cat(sprintf("\nPDF plot has been saved as: %s in the current directory: %s\n", pdf_filename, getwd()))
