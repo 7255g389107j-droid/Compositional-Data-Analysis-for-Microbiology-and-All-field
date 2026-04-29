@@ -46,7 +46,8 @@ diagnose_chaos_policy_A <- function(Dataset) {
   cat("\n==========================================================\n")
   cat("      ITAGAKI ULTRA-STRICT DIAGNOSTIC REPORT (Policy A)   \n")
   cat("==========================================================\n")
-  cat(sprintf("PHYSICAL DEVIATION (S_p) : %.6f\n", S_p)) 
+  cat(sprintf("SYSTEM MEAN EFFECTIVE LIB SIZE: %.2e\n", eff_lib))
+  cat(sprintf("SYSTEM MEAN PHYSICAL DEVIATION (S_p) : %.6f\n", S_p)) 
   cat(sprintf("STRICT VALID TAXA COUNT : %d / %d\n", ncol(d_m), n_t))
   cat(sprintf("SYSTEM STATUS           : %s\n", 
               ifelse(S_p < 0.4, "STABLE (Laminar)", 
