@@ -100,4 +100,4 @@ cat("  - Physical_Deviation (Sp): Stability score (Lower is more Stable).\n")
 cat("==========================================================\n")
 
 # Optional: Visualization of Physical Deviation
-# plot(stability_report$Mean_Abundance, stability_report$Physical_Deviation_Sp, log="x")
+  plot(stability_report$Mean_Abundance, stability_report$Physical_Deviation_Sp, log="x")
