@@ -18,7 +18,7 @@
 # =================================================================
 
 analyze_physical_coherence_v18_integrated <- function(Dataset, 
-                                                     drop_ratio = 0.10, 
+                                                     drop_ratio = 0.10,           # drop_ratio = 0.20 may be ok
                                                      floor_val = floor_i) {
   
   # --- 1. INITIALIZATION & DYNAMIC PHYSICS ---
@@ -98,7 +98,7 @@ analyze_physical_coherence_v18_integrated <- function(Dataset,
   if(rho_val > 0.95) {
     status <- "PASS (Physically Coherent)"
     conclusion <- "Laminar Architecture: The physical ranking remains invariant."
-  } else if(rho_val > 0.85) {
+  } else if(rho_val > 0.90) {
     status <- "PASS (Robust)"
     conclusion <- "Stable System: Core relationships are largely preserved."
   } else {
@@ -130,7 +130,7 @@ pdf("Itagaki_System_v18_Report.pdf", width = 10, height = 10)
 
 # 2. Run the analysis (The function's plot will automatically draw to the PDF)
 # Note: Ensure 'Dataset' is loaded in your environment before running this
-result <- analyze_physical_coherence_v18_integrated(Dataset, drop_ratio = 0.10)
+result <- analyze_physical_coherence_v18_integrated(Dataset, drop_ratio = 0.10)  # drop_ratio = 0.20 may be OK
 
 # 3. Add a secondary page for the Driver Table (Optional)
 plot.new()
@@ -148,38 +148,51 @@ dev.off()
 
 cat("\n[SUCCESS] PDF report generated: Itagaki_System_v18_Report.pdf\n")
 
-### Relative Absolute Abundance
-# 1. Physical Scale Correction (Normalizing by Sampling Depth)
-# Align all samples to a common physical detection limit
-eff_libs <- apply(P_raw, 1, function(x) 1 / min(x[x > 0]))
-P_eff_corrected <- sweep(P_raw, 1, eff_libs, "*")
+# --- CRITICAL: COHERENCE VALIDATION & DATA EXPORT ---
 
-# 2. Structural Baseline Integration (Extracting Absolute Dynamics)
-# Identify the invariant core (Stable Taxa) from V18.1 IR analysis
-stable_taxa <- setdiff(names(result$ir_full), result$dropped)
+if (result$rho > 0.90) {
+  # --- CASE: PASS ---
+  cat("\n[VALIDATION: PASS] System is physically coherent. Generating absolute proxies...\n")
+  
+  # 1. Physical Scale Correction
+  eff_libs <- apply(P_raw, 1, function(x) 1 / min(x[x > 0]))
+  P_eff_corrected <- sweep(P_raw, 1, eff_libs, "*")
 
-# Calculate the internal anchor (Geometric Mean of stable components)
-scale_factor <- apply(P_raw[, stable_taxa, drop=FALSE], 1, function(x) exp(mean(log(x))))
+  # 2. Structural Baseline Integration
+  stable_taxa <- setdiff(names(result$ir_full), result$dropped)
+  scale_factor <- apply(P_raw[, stable_taxa, drop=FALSE], 1, function(x) exp(mean(log(x))))
 
-# Generate the Final Absolute Proxy
-# This captures true magnitude changes by anchoring to the physical baseline
-P_absolute_proxy <- sweep(P_raw, 1, scale_factor, "/") 
+  # 3. Generate and Export Proxy
+  P_absolute_proxy <- sweep(P_raw, 1, scale_factor, "/") 
+  write.csv(P_absolute_proxy, "Relative_Absolute_Abundance_P_proxy.csv", row.names = TRUE)
 
-write.csv(P_absolute_proxy, "Relative Absolute Abundance_Physical_P_absolute_proxy_Data.csv", row.names = TRUE)
+  # 4. Final Scaling
+  # Define your known total scale (e.g., 10^6 to 10^9)
+  # You can adjust this constant based on your experimental domain knowledge.
+  # Option A: Universal Scaling
+  total_volume_constant <- 1e+8
+  P_estimated_absolute <- P_absolute_proxy * total_volume_constant
 
-# Define your known total scale (e.g., 10^6 to 10^9)
-# You can adjust this constant based on your experimental domain knowledge.
-total_volume_constant <- 1e+8
+  # Option B: Sample-specific Scaling 
+  # (If you have a vector of total measurements like 'total_counts')
+  # P_estimated_absolute <- sweep(P_absolute_proxy, 1, total_counts, "*")
 
-# Option A: Universal Scaling 
-# (If you assume the system baseline reflects this total volume)
-P_estimated_absolute <- P_absolute_proxy * total_volume_constant
+  write.csv(P_estimated_absolute, "Itagaki_Final_Estimated_Absolute_Data.csv", row.names = TRUE)
 
-# Option B: Sample-specific Scaling 
-# (If you have a vector of total measurements like 'total_counts')
-# P_estimated_absolute <- sweep(P_absolute_proxy, 1, total_counts, "*")
+  cat(sprintf("[SUCCESS] CSV files generated. Absolute dynamics restored using Scale Factor: %.1e\n", total_volume_constant))
 
-# --- Export the Final Physical Absolute Data ---
-write.csv(P_estimated_absolute, "Itagaki_Final_Estimated_Absolute_Data.csv", row.names = TRUE)
-
-cat(sprintf("\n[SUCCESS] Absolute dynamics restored using Scale Factor: %.1e\n", total_volume_constant))
+} else {
+  # --- CASE: FAIL ---
+  cat("\n==========================================================\n")
+  cat("CRITICAL ERROR: PHYSICAL COHERENCE VALIDATION FAILED\n")
+  cat(sprintf("Current Physical Rho: %.6f (Required: > 0.90)\n", result$rho))
+  cat("----------------------------------------------------------\n")
+  cat("ACTION: DATA EXPORT TERMINATED.\n")
+  cat("The calculated stability is insufficient. The resulting CSV\n")
+  cat("would be mathematically inconsistent.\n")
+  cat("If there are sufficient components, try drop_ratio = 0.20.\n")
+  cat("==========================================================\n")
+  
+  # Halt the entire script execution
+  stop("Process halted: Incoherent physical drivers detected.")
+}
