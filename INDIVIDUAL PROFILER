@@ -208,5 +208,3 @@ legend(x = ncol(Rel_Mat) * 1.1, y = nrow(Rel_Mat),
 grid(nx = ncol(Rel_Mat), ny = nrow(Rel_Mat), col = "white", lty = 1, lwd = 0.5)
 
 dev.off()
-
-cat(sprintf("Success: Heatmap saved to %s\n", pdf_heat_file))
