@@ -119,33 +119,41 @@ if(nrow(targets) > 0) {
 }
 cat("==========================================================\n")
 
-# --- 6. ENHANCED VISUALIZATION WITH LEGEND ---
+# --- 6. ENHANCED VISUALIZATION WITH LEGEND (FIXED ORDER) ---
 pdf("ITAGAKI_Final_Diagnostic_Map_Fixed.pdf", width=16, height=10)
 
 # Create layout: Matrix area (85%) and Legend area (15%)
 layout(matrix(c(1, 2), nrow = 1), widths = c(0.85, 0.15))
 
 # PANEL 1: MAIN HEATMAP
-# Increase bottom margin (mar[1]) to prevent X-axis label overlap
+# Adjust margins: mar[1] for X-axis labels, mar[2] for Sample IDs
 par(mar=c(15, 10, 5, 2), bg = "#FDFDFD")
 
 color_palette <- colorRampPalette(c("#FDFDFD", "#F1C40F", "#E74C3C"))(100)
 
-image(1:ncol(singularity_mat), 1:nrow(singularity_mat), t(singularity_mat),
+# REVERSE ROW ORDER: To display from top to bottom
+# image() plots from bottom to top, so we reverse the rows of the matrix
+flipped_mat <- singularity_mat[nrow(singularity_mat):1, ]
+
+image(1:ncol(flipped_mat), 1:nrow(flipped_mat), t(flipped_mat),
       col = color_palette,
       main="ITAGAKI SYSTEM: PHYSICAL SINGULARITY MAP",
       xaxt="n", yaxt="n", xlab="", ylab="")
 
-# X-axis (Taxa names) - rotated 90 degrees with extra spacing
-axis(1, at=1:ncol(singularity_mat), labels=colnames(singularity_mat), 
+# X-axis (Taxa names) - rotated 90 degrees
+axis(1, at=1:ncol(flipped_mat), labels=colnames(flipped_mat), 
      las=2, cex.axis=0.7, tick=FALSE, line=0.5)
-# Y-axis (Sample IDs)
-axis(2, at=1:nrow(singularity_mat), labels=rownames(singularity_mat), 
+
+# Y-axis (Sample IDs) - ensures names match the flipped rows
+axis(2, at=1:nrow(flipped_mat), labels=rownames(flipped_mat), 
      las=1, cex.axis=0.8)
 
 # Marker for detected targets (X marks)
+# Note: Target coordinates must be adjusted to the flipped grid
 if(nrow(targets) > 0) {
-  points(targets[,2], targets[,1], pch=4, lwd=2, cex=1.5)
+  # Recalculate Y position: new_y = total_rows - original_y + 1
+  adjusted_y <- nrow(singularity_mat) - targets[,1] + 1
+  points(targets[,2], adjusted_y, pch=4, lwd=2, cex=1.5)
 }
 
 # PANEL 2: DEDICATED LEGEND
@@ -157,14 +165,17 @@ legend_image <- as.raster(matrix(rev(color_palette), ncol=1))
 rasterImage(legend_image, 0.2, 0.3, 0.4, 0.7)
 
 # Add Legend text
-text(x=0.5, y=0.72, labels="High Turbulence", font=2, cex=0.9)
-text(x=0.5, y=0.28, labels="Stable/Laminar", font=2, cex=0.9)
-text(x=0.3, y=seq(0.3, 0.7, length.out=5), 
-     labels=round(seq(min(singularity_mat), max(singularity_mat), length.out=5), 1),
+text(x=0.5, y=0.75, labels="High Turbulence", font=2, cex=1.0)
+text(x=0.5, y=0.25, labels="Stable/Laminar", font=2, cex=1.0)
+
+# Scale values
+scale_vals <- seq(min(singularity_mat), max(singularity_mat), length.out=5)
+text(x=0.45, y=seq(0.3, 0.7, length.out=5), 
+     labels=round(scale_vals, 1),
      pos=4, cex=0.8)
 
-mtext("Singularity Score", side=3, line=-10, adj=0.5, font=2)
+mtext("Singularity Score", side=3, line=-8, adj=0.5, font=2, cex=1.2)
 
 dev.off()
 
-cat("\nSUCCESS: Final report generated with Independent Legend Area.\n")
+cat("\nSUCCESS: Heatmap generated with corrected row order (Top-to-Bottom).\n")
