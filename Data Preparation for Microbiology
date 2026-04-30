@@ -180,60 +180,66 @@ if(length(qualitative_taxa) > 0) {
 # =================================================================
 # ITAGAKI-SYSTEM: PHYSICAL RELIABILITY HEATMAP (ANTI-COLLISION)
 # -----------------------------------------------------------------
-# Feature: Separated Legend Space & Dynamic Margins
+# Feature: Fixed Row Order & Separated Legend Space
 # Status: 1 (Reliable: Blue), 0 (Uncertain: Yellow), -1 (Absent: Gray)
 # Developed by: Tatsuki Itagaki
 # =================================================================
 
 # --- 1. SETUP PLOT DEVICE ---
-file_name <- "ITAGAKI_Reliability_Heatmap_Fixed.pdf"
+file_name <- "Reliability_Heatmap_RowFixed.pdf"
 pdf(file_name, width = 16, height = 10)
 
 # Create a layout: Heatmap (Left, 85%) and Legend (Right, 15%)
 layout(matrix(c(1, 2), nrow = 1), widths = c(0.85, 0.15))
 
-# --- 2. HEATMAP AREA ---
-# Adjust margins: bottom for taxa names, left for sample IDs
+# --- 2. DATA PREPARATION ---
+# Sort columns (taxa) by reliability, but KEEP row (sample) order
+overall_reliability <- colSums(rel_status_mat == 1)
+sorted_taxa_idx <- order(overall_reliability, decreasing = TRUE)
+plot_mat <- rel_status_mat[, sorted_taxa_idx]
+
+# IMPORTANT: Reverse the row order for image() to display top-to-bottom
+# image() plots from bottom (y=1) to top (y=n). 
+# Reversing the matrix ensures the first row of data is at the top of the plot.
+plot_mat_final <- t(apply(plot_mat, 2, rev))
+
+# --- 3. HEATMAP AREA ---
 par(mar = c(12, 10, 5, 2), bg = "#FDFDFD")
 
 # Color Palette: Absent(Gray), Uncertain(Yellow), Reliable(Blue)
 status_colors <- c("#D5D8DC", "#F1C40F", "#2980B9") 
 
-# Re-sorting for visual structure (Reliability order)
-overall_reliability <- colSums(rel_status_mat == 1)
-sorted_taxa_idx <- order(overall_reliability, decreasing = TRUE)
-plot_mat <- rel_status_mat[, sorted_taxa_idx]
-
 # Plot the heatmap
-image(1:ncol(plot_mat), 1:nrow(plot_mat), t(plot_mat),
+image(1:ncol(plot_mat), 1:nrow(plot_mat), plot_mat_final,
       col = status_colors,
       xaxt = "n", yaxt = "n", xlab = "", ylab = "",
-      main = "SYSTEM RELIABILITY MAP (Physical Diagnostics)")
+      main = "SYSTEM RELIABILITY MAP (Fixed Row Order)")
 
 # Axis Labels
+# X-axis: Taxa names
 axis(1, at = 1:ncol(plot_mat), labels = colnames(plot_mat), las = 2, cex.axis = 0.7)
-axis(2, at = 1:nrow(plot_mat), labels = rownames(plot_mat), las = 1, cex.axis = 0.8)
+# Y-axis: Sample IDs (reversed to match the matrix transformation)
+axis(2, at = 1:nrow(plot_mat), labels = rev(rownames(plot_mat)), las = 1, cex.axis = 0.8)
 
 # Add grid lines
 abline(v = (1:ncol(plot_mat)) + 0.5, col = "white", lwd = 0.5)
 abline(h = (1:nrow(plot_mat)) + 0.5, col = "white", lwd = 0.5)
 
-# --- 3. SEPARATED LEGEND AREA ---
-# Reset margins for legend panel
+# --- 4. SEPARATED LEGEND AREA ---
 par(mar = c(0, 0, 0, 0))
-plot.new() # Create empty space for legend
+plot.new() 
 
-# Place the legend in the center of the right panel
 legend("center", 
-       legend = c("Reliable (>=10x Floor)", "Uncertain (Presence)", "Absent (Zero)"),
+       legend = c("Reliable (>=10x)", "Uncertain (Presence)", "Absent (Zero)"),
        fill = rev(status_colors), 
        border = "black",
        bty = "n", 
-       cex = 1.0,
-       title = "Physical Status")
+       cex = 1.1,
+       title = "Status Status",
+       title.font = 2)
 
 # Close and Save
 dev.off()
 
 cat(sprintf("\nSUCCESS: Heatmap saved to %s\n", file_name))
-cat("Layout calibrated: Legend is now placed in an independent side panel.\n")
+cat("Layout calibrated: Rows maintain original order from top to bottom.\n")
