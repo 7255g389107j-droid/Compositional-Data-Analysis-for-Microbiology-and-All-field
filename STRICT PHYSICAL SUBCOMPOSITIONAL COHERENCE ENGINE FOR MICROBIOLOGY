@@ -148,6 +148,7 @@ dev.off()
 
 cat("\n[SUCCESS] PDF report generated: Itagaki_System_v18_Report.pdf\n")
 
+### Relative Absolute Abundance
 # 1. Physical Scale Correction (Normalizing by Sampling Depth)
 # Align all samples to a common physical detection limit
 eff_libs <- apply(P_raw, 1, function(x) 1 / min(x[x > 0]))
@@ -164,4 +165,4 @@ scale_factor <- apply(P_raw[, stable_taxa, drop=FALSE], 1, function(x) exp(mean(
 # This captures true magnitude changes by anchoring to the physical baseline
 P_absolute_proxy <- sweep(P_raw, 1, scale_factor, "/")
 
-write.csv(P_absolute_proxy, "Itagaki_Physical_P_absolute_proxy_Data.csv", row.names = TRUE)
+write.csv(P_absolute_proxy, "Relative Absolute Abundance_Physical_P_absolute_proxy_Data.csv", row.names = TRUE)
