@@ -2,7 +2,7 @@
 # ITAGAKI-SYSTEM V18.1: PHYSICAL COHERENCE ENGINE (FULL INTEGRATED)
 # -----------------------------------------------------------------
 # Feature: IR-based Subcompositional Invariance & Driver Identification
-# Logic: Strips top 10% IR drivers to test structural stability.
+# Logic: Strips top 10% (to 20%) IR drivers to test structural stability.
 # Developed by: Tatsuki Itagaki
 # Copyright (c) 2026 Tatsuki Itagaki
 # License: MIT License (https://opensource.org)
@@ -18,7 +18,7 @@
 # =================================================================
 
 analyze_physical_coherence_v18_integrated <- function(Dataset, 
-                                                     drop_ratio = 0.10,           # drop_ratio = 0.20 may be ok
+                                                     drop_ratio,          
                                                      floor_val = floor_i) {
   
   # --- 1. INITIALIZATION & DYNAMIC PHYSICS ---
