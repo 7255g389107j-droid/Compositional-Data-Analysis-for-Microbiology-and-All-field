@@ -147,3 +147,21 @@ text(x = 0, y = 0.9, labels = paste(report_text, collapse = "\n"), adj = c(0, 1)
 dev.off()
 
 cat("\n[SUCCESS] PDF report generated: Itagaki_System_v18_Report.pdf\n")
+
+# 1. Physical Scale Correction (Normalizing by Sampling Depth)
+# Align all samples to a common physical detection limit
+eff_libs <- apply(P_raw, 1, function(x) 1 / min(x[x > 0]))
+P_eff_corrected <- sweep(P_raw, 1, eff_libs, "*")
+
+# 2. Structural Baseline Integration (Extracting Absolute Dynamics)
+# Identify the invariant core (Stable Taxa) from V18.1 IR analysis
+stable_taxa <- setdiff(names(result$ir_full), result$dropped)
+
+# Calculate the internal anchor (Geometric Mean of stable components)
+scale_factor <- apply(P_raw[, stable_taxa, drop=FALSE], 1, function(x) exp(mean(log(x))))
+
+# Generate the Final Absolute Proxy
+# This captures true magnitude changes by anchoring to the physical baseline
+P_absolute_proxy <- sweep(P_raw, 1, scale_factor, "/")
+
+write.csv(P_absolute_proxy, "Itagaki_Physical_P_absolute_proxy_Data.csv", row.names = TRUE)
