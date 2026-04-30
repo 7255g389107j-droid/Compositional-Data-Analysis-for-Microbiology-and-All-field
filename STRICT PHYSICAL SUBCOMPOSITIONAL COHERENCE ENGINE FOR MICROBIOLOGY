@@ -163,6 +163,23 @@ scale_factor <- apply(P_raw[, stable_taxa, drop=FALSE], 1, function(x) exp(mean(
 
 # Generate the Final Absolute Proxy
 # This captures true magnitude changes by anchoring to the physical baseline
-P_absolute_proxy <- sweep(P_raw, 1, scale_factor, "/")
+P_absolute_proxy <- sweep(P_raw, 1, scale_factor, "/") 
 
 write.csv(P_absolute_proxy, "Relative Absolute Abundance_Physical_P_absolute_proxy_Data.csv", row.names = TRUE)
+
+# Define your known total scale (e.g., 10^6 to 10^9)
+# You can adjust this constant based on your experimental domain knowledge.
+total_volume_constant <- 1e+8
+
+# Option A: Universal Scaling 
+# (If you assume the system baseline reflects this total volume)
+P_estimated_absolute <- P_absolute_proxy * total_volume_constant
+
+# Option B: Sample-specific Scaling 
+# (If you have a vector of total measurements like 'total_counts')
+# P_estimated_absolute <- sweep(P_absolute_proxy, 1, total_counts, "*")
+
+# --- Export the Final Physical Absolute Data ---
+write.csv(P_estimated_absolute, "Itagaki_Final_Estimated_Absolute_Data.csv", row.names = TRUE)
+
+cat(sprintf("\n[SUCCESS] Absolute dynamics restored using Scale Factor: %.1e\n", total_volume_constant))
