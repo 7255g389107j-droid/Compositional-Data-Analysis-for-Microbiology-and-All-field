@@ -1,0 +1,222 @@
+# =================================================================
+# ITAGAKI-SYSTEM V2026.4.30: Individual PROFILER
+# Feature: Strict Zero-Exclusion & Physical Reliability Mapping
+# Logic: Zero = Absent; Reliable = Non-Zero & > 10x Noise Floor
+# Developed by: Tatsuki Itagaki
+# Copyright (c) 2026 Tatsuki Itagaki
+# License: MIT License (https://opensource.org)
+# 
+# ACADEMIC CITATION:
+# If you use this software or its logic in your research, 
+# please cite the following works:
+# Itagaki, T (2024). DOI: 10.20944/preprints202402.0275.v3
+# Itagaki, T (2024). DOI: 10.3390/microorganisms12071484
+# Itagaki, T (2025). DOI: 10.3390/nu17233681
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.21953.93284
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.35015.25762
+# =================================================================
+
+# --- 1. DATA PREPARATION ---
+P_raw <- as.matrix(Dataset[, colSums(Dataset != 0) > 0])
+sample_ids <- rownames(P_raw)
+if(is.null(sample_ids)) sample_ids <- paste0("S_", 1:nrow(P_raw))
+n_s <- nrow(P_raw)
+
+# --- 2. ENHANCED VISUALIZATION & CALCULATION ---
+pdf_file <- "ITAGAKI_Strict_Reliability_Report.pdf"
+pdf(pdf_file, width = 14, height = 10)
+
+# To store summary data
+summary_list <- list()
+
+for(i in 1:n_s) {
+  # Layout adjustment
+  par(mar = c(12, 8, 6, 8), bg = "#FDFDFD", las = 1)
+  
+  # CRITICAL: Identify Non-Zero components for this specific individual
+  current_sample <- P_raw[i, ]
+  non_zero_mask <- current_sample > 0
+  obs_proportions <- current_sample[non_zero_mask]
+  obs_taxa_names <- names(obs_proportions)
+  
+  n_detected <- length(obs_proportions)
+  
+  if(n_detected > 0) {
+    # Calculate Individual Constants based on detected taxa ONLY
+    # Eff_Lib = 1 / Minimum observed proportion in this sample
+    eff_lib_i <- 1 / min(obs_proportions)
+    floor_i <- 1 / eff_lib_i
+    
+    # Define Reliable Taxa: Detected AND >= 10x floor
+    reliable_mask <- obs_proportions >= (floor_i * 10)
+    reliable_taxa_names <- obs_taxa_names[reliable_mask]
+    n_reliable <- length(reliable_taxa_names)
+    
+    # Sorting for plot
+    sort_idx <- order(obs_proportions, decreasing = TRUE)
+    y_sorted <- obs_proportions[sort_idx]
+    taxa_sorted <- obs_taxa_names[sort_idx]
+    
+    # --- PLOT INITIALIZATION ---
+    plot(y_sorted, type = "h", lwd = 12, lend = 1, col = "#2C3E50",
+         log = "y", yaxt = "n", xaxt = "n",
+         xlab = "", ylab = "",
+         main = paste("STRICT RELIABILITY PROFILE:", sample_ids[i]),
+         ylim = c(floor_i * 0.5, 2))
+    
+    mtext("Relative Abundance (Log Scale)", side = 2, line = 5, cex = 1.2, las = 0)
+    
+    # Draw Physics-based reference lines
+    abline(h = floor_i, col = "#E74C3C", lwd = 2, lty = 2)      # Noise Floor
+    abline(h = floor_i * 10, col = "#F1C40F", lwd = 1.5, lty = 3) # Safety Margin
+    
+    # --- STATISTICS BOX (Top Right) ---
+    rect(n_detected * 0.62, 0.2, n_detected * 1.05, 1.8, col = rgb(1,1,1,0.9), border = "#BDC3C7")
+    text(n_detected * 0.65, 1.50, paste("Detected Taxa (Non-Zero) :", n_detected), pos = 4, font = 2, cex = 1.0)
+    text(n_detected * 0.65, 1.15, paste("Reliable Taxa (>=10x)  :", n_reliable), pos = 4, font = 2, cex = 1.0, col = "#2980B9")
+    text(n_detected * 0.65, 0.85, paste("Eff. Library Size        :", sprintf("%.2e", round(eff_lib_i))), pos = 4, font = 1, cex = 0.9)
+    text(n_detected * 0.65, 0.55, paste("Poisson Noise Floor      :", sprintf("%.2e", floor_i)), pos = 4, font = 1, cex = 0.9, col = "#E74C3C")
+    text(n_detected * 0.65, 0.35, paste("Sample Index             :", i), pos = 4, font = 1, cex = 0.8, col = "gray")
+
+    # Axes
+    axis(2, at = 10^(seq(-8, 0, 1)), labels = expression(10^0, 10^-1, 10^-2, 10^-3, 10^-4, 10^-5, 10^-6, 10^-7, 10^-8), las = 1)
+    axis(1, at = 1:n_detected, labels = taxa_sorted, las = 2, cex.axis = 0.7)
+    grid(nx = NA, ny = NULL, col = "gray90")
+    
+    # Legend
+    legend("topleft", legend = c("Measured Proportion", "10x Safety Margin", "Noise Floor (1/Eff_Lib)"),
+           col = c("#2C3E50", "#F1C40F", "#E74C3C"), lty = c(1, 3, 2), lwd = c(4, 2, 2), bty = "n", cex = 0.8)
+    
+    # Store results for summary table
+    summary_list[[i]] <- data.frame(
+      Sample_ID = sample_ids[i],
+      Eff_Lib = eff_lib_i,
+      Noise_Floor = floor_i,
+      Detected_Taxa = n_detected,
+      Reliable_Taxa = n_reliable
+    )
+  }
+}
+
+dev.off()
+
+# --- 3. CONSOLIDATED SUMMARY REPORT ---
+final_report <- do.call(rbind, summary_list)
+final_report$Reliability_Score <- paste0(round(final_report$Reliable_Taxa / final_report$Detected_Taxa * 100, 1), "%")
+
+cat("\n==========================================================\n")
+cat("      FINAL SYSTEM RELIABILITY SUMMARY REPORT             \n")
+cat("==========================================================\n")
+print(final_report, row.names = FALSE)
+cat("==========================================================\n")
+cat(sprintf("PDF Report saved as: %s\n", pdf_file))
+
+# --- 1. RELIABILITY MATRIX GENERATION ---
+# 0: Absent, 1: Uncertain, 2: Reliable
+Rel_Mat <- matrix(0, nrow = nrow(P_raw), ncol = ncol(P_raw),
+                  dimnames = list(rownames(P_raw), colnames(P_raw)))
+
+for(i in 1:nrow(P_raw)) {
+  current_sample <- P_raw[i, ]
+  obs_vals <- current_sample[current_sample > 0]
+  
+  if(length(obs_vals) > 0) {
+    floor_i <- min(obs_vals) # 1 / (1/min) is just min
+    safety_margin <- floor_i * 10
+    
+    # Logic Assignment
+    Rel_Mat[i, current_sample > 0] <- 1
+    Rel_Mat[i, current_sample >= safety_margin] <- 2
+  }
+}
+
+# --- 2. VISUALIZATION (BASE R) ---
+# Define color palette: 0=Gray, 1=Yellow, 2=Dark Blue
+my_colors <- c("#E0E0E0", "#F1C40F", "#2C3E50")
+
+# Adjust margins for labels
+par(mar = c(10, 8, 4, 10))
+
+# Base R image function (Transpose matrix because image() plots rows on x-axis)
+image(1:ncol(Rel_Mat), 1:nrow(Rel_Mat), t(Rel_Mat),
+      col = my_colors,
+      breaks = c(-0.5, 0.5, 1.5, 2.5), # Define boundaries for discrete categories
+      xaxt = "n", yaxt = "n",
+      xlab = "", ylab = "",
+      main = "System Reliability Heatmap")
+
+# Add Axes
+axis(1, at = 1:ncol(Rel_Mat), labels = colnames(Rel_Mat), las = 2, cex.axis = 0.7)
+axis(2, at = 1:nrow(Rel_Mat), labels = rownames(Rel_Mat), las = 1, cex.axis = 0.8)
+
+# Add Legend
+legend(x = ncol(Rel_Mat) * 1.05, y = nrow(Rel_Mat),
+       legend = c("Reliable (>=10x Floor)", "Uncertain (Presence)", "Absent (Zero)"),
+       fill = rev(my_colors),
+       xpd = TRUE, bty = "n", cex = 0.8)
+
+# Add grid lines for clarity
+grid(nx = ncol(Rel_Mat), ny = nrow(Rel_Mat), col = "white", lty = 1, lwd = 0.5)
+
+
+
+# --- 1. RELIABILITY MATRIX GENERATION ---
+# 0: Absent, 1: Uncertain, 2: Reliable
+Rel_Mat <- matrix(0, nrow = nrow(P_raw), ncol = ncol(P_raw),
+                  dimnames = list(rownames(P_raw), colnames(P_raw)))
+
+for(i in 1:nrow(P_raw)) {
+  current_sample <- P_raw[i, ]
+  obs_vals <- current_sample[current_sample > 0]
+  if(length(obs_vals) > 0) {
+    floor_i <- min(obs_vals)
+    safety_margin <- floor_i * 10
+    
+    Rel_Mat[i, current_sample > 0] <- 1
+    Rel_Mat[i, current_sample >= safety_margin] <- 2
+  }
+}
+
+# --- 2. COLUMN SORTING (KEEP ROWS AS IS) ---
+# Calculate reliability scores for Taxa (Columns)
+# Priority: High Reliable count -> High Uncertain count
+col_scores <- colSums(Rel_Mat == 2) * 100 + colSums(Rel_Mat == 1)
+Rel_Mat_Sorted <- Rel_Mat[, order(col_scores, decreasing = TRUE)]
+
+# --- 3. PDF OUTPUT & VISUALIZATION ---
+pdf_heat_file <- "Reliability_Heatmap_Original_Order.pdf"
+pdf(pdf_heat_file, width = 14, height = 10)
+
+# Colors: 0=Gray(Absent), 1=Yellow(Uncertain), 2=Dark Blue(Reliable)
+my_colors <- c("#E0E0E0", "#F1C40F", "#2C3E50")
+
+# Adjust margins: bottom for taxa names, left for sample IDs
+par(mar = c(12, 10, 5, 12), bg = "#FDFDFD")
+
+# Plot Heatmap
+# Note: rows are plotted from bottom to top, so we reverse the row index to keep original top-to-bottom order
+image(1:ncol(Rel_Mat_Sorted), 1:nrow(Rel_Mat_Sorted), t(Rel_Mat_Sorted[nrow(Rel_Mat_Sorted):1, ]),
+      col = my_colors,
+      breaks = c(-0.5, 0.5, 1.5, 2.5),
+      xaxt = "n", yaxt = "n",
+      xlab = "", ylab = "",
+      main = "Taxa Reliability Heatmap (Original Sample Order)")
+
+# Add Taxa Names (Columns)
+axis(1, at = 1:ncol(Rel_Mat_Sorted), labels = colnames(Rel_Mat_Sorted), las = 2, cex.axis = 0.6)
+
+# Add Sample IDs (Rows - Reversed to match the image() plotting logic)
+axis(2, at = 1:nrow(Rel_Mat_Sorted), labels = rev(rownames(Rel_Mat_Sorted)), las = 1, cex.axis = 0.8)
+
+# Add Legend
+legend(x = ncol(Rel_Mat_Sorted) * 1.05, y = nrow(Rel_Mat_Sorted),
+       legend = c("Reliable (>=10x Floor)", "Uncertain (Presence)", "Absent (Zero)"),
+       fill = rev(my_colors),
+       xpd = TRUE, bty = "n", cex = 0.9)
+
+# Grid lines for boundaries
+grid(nx = ncol(Rel_Mat_Sorted), ny = nrow(Rel_Mat_Sorted), col = "white", lty = 1, lwd = 0.5)
+
+dev.off()
+
+cat(sprintf("Success: Heatmap with original sample order saved to %s\n", pdf_heat_file))
