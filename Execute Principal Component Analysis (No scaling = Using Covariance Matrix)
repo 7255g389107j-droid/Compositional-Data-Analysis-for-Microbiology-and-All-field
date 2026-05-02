@@ -18,7 +18,7 @@
 # =================================================================
 
 # ---0.  Raw Dataset
-# pca_res <- princomp(Dataset[, colSums(Dataset != 0) > 0], center = TRUE, cor = FALSE) 
+# pca_res <- princomp(Dataset[, colSums(Dataset != 0) > 0], cor = FALSE)  # center = TRUE
 
 # --- 1. DATA INITIALIZATION & PHYSICAL FILTERING ---
 # Assumes 'Dataset' is a proportion matrix (Rows: Samples, Cols: Taxa)
@@ -50,7 +50,7 @@ P_reliable <- P_raw[, valid_taxa_mask, drop = FALSE]
 
 if(ncol(P_reliable) < 2) stop("CRITICAL: Insufficient taxa passed the 10x Noise Floor.")
 
-pca_res <- princomp(P_reliable, cor = FALSE)
+pca_res <- princomp(P_reliable, cor = FALSE) # center = TRUE
 
 # --------------Biplot
 # 2. Plot scores for the first two principal components (PC1 and PC2)
