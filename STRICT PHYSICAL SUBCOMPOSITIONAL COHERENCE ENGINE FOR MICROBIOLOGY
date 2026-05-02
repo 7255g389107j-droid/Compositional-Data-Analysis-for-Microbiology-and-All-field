@@ -39,6 +39,9 @@ analyze_physical_coherence_v18_integrated <- function(Dataset,
 
   valid_mask <- apply(is_reliable_mat, 2, all)
   
+　cat("DEBUG: Internal Passed Names:", colnames(P_raw)[valid_mask], "\n")
+　cat("DEBUG: Internal Count:", sum(valid_mask), "\n")
+
   if(sum(valid_mask) < 5) stop("CRITICAL ERROR: Insufficient components for coherence testing.")
   
   P_clean <- P_raw[, valid_mask, drop = FALSE]
@@ -148,46 +151,73 @@ dev.off()
 
 cat("\n[SUCCESS] PDF report generated: Itagaki_System_v18_Report.pdf\n")
 
-# --- CRITICAL: COHERENCE VALIDATION & DATA EXPORT ---
+# =================================================================
+# ITAGAKI-SYSTEM: FINAL VALIDATED DATA EXPORT (RHO > 0.90)
+# -----------------------------------------------------------------
+# Logic: Policy A (10x Floor) + Stripping Test (Physical Rho)
+# Purpose: Absolute Proxy Restoration for Certified Components
+# Define your known total scale (e.g., 10^6 to 10^9)
+# You can adjust this constant based on your experimental domain knowledge.
+# =================================================================
 
+# --- 1. PHYSICAL COHERENCE CHECK ---
+# Checking the Spearman Rho from the previous Strip-test result
 if (result$rho > 0.90) {
-  # --- CASE: PASS ---
-  cat("\n[VALIDATION: PASS] System is physically coherent. Generating absolute proxies...\n")
   
-  # 1. Physical Scale Correction
-  eff_libs <- apply(P_raw, 1, function(x) 1 / min(x[x > 0]))
-  P_eff_corrected <- sweep(P_raw, 1, eff_libs, "*")
-
-  # 2. Structural Baseline Integration
-  stable_taxa <- setdiff(names(result$ir_full), result$dropped)
-  scale_factor <- apply(P_raw[, stable_taxa, drop=FALSE], 1, function(x) exp(mean(log(x))))
-
-  # 3. Generate and Export Proxy
-  P_absolute_proxy <- sweep(P_raw, 1, scale_factor, "/") 
-  write.csv(P_absolute_proxy, "Relative_Absolute_Abundance_P_proxy.csv", row.names = TRUE)
-
-  # 4. Final Scaling
-  # Define your known total scale (e.g., 10^6 to 10^9)
-  # You can adjust this constant based on your experimental domain knowledge.
-  # Option A: Universal Scaling
-  total_volume_constant <- 1e+8
-  P_estimated_absolute <- P_absolute_proxy * total_volume_constant
-
-  # Option B: Sample-specific Scaling 
-  # (If you have a vector of total measurements like 'total_counts')
-  # P_estimated_absolute <- sweep(P_absolute_proxy, 1, total_counts, "*")
-
-  write.csv(P_estimated_absolute, "Itagaki_Final_Estimated_Absolute_Data.csv", row.names = TRUE)
-
-  cat(sprintf("[SUCCESS] CSV files generated. Absolute dynamics restored using Scale Factor: %.1e\n", total_volume_constant))
+  # --- CASE: PASS (System is Physically Coherent) ---
+  cat("\n[VALIDATION: PASS] System coherence confirmed (Rho > 0.90).\n")
+  
+  # Identify the components that were NOT dropped (The stable sub-composition)
+  # result$dropped contains the top 10-20% IR drivers
+  stable_taxa_names <- setdiff(colnames(P_reliable), result$dropped)
+  
+  if(length(stable_taxa_names) > 0) {
+    
+    # --- 2. EXTRACT CERTIFIED DATA ---
+    # These taxa passed both the Noise Floor AND the Structural Stability test
+    P_certified <- P_reliable[, stable_taxa_names, drop = FALSE]
+    
+    # --- 3. CALCULATE DIAGNOSTICS ---
+    mean_ir <- result$ir_full[stable_taxa_names]
+    
+    certified_report <- data.frame(
+      Taxon_Name = stable_taxa_names,
+      IR_Value = round(mean_ir, 4),
+      Reliability_Status = "CERTIFIED",
+      Coherence_Rho = round(result$rho, 6)
+    )
+    
+    # --- 4. FINAL CSV EXPORT ---
+    # A: Certified Metadata
+    meta_file <- "ITAGAKI_CERTIFIED_Stability_Metadata.csv"
+    write.csv(certified_report, meta_file, row.names = FALSE)
+    
+    # B: Certified Raw Proportions
+    data_file <- "ITAGAKI_CERTIFIED_Verified_Proportions.csv"
+    write.csv(P_certified, data_file, row.names = TRUE)
+    
+    cat("----------------------------------------------------------\n")
+    cat(sprintf("Certified Components : %d\n", length(stable_taxa_names)))
+    cat(sprintf("Structural Stability : Rho = %.6f\n", result$rho))
+    cat(sprintf("Metadata Exported    : %s\n", meta_file))
+    cat(sprintf("Data Exported        : %s\n", data_file))
+    cat("----------------------------------------------------------\n")
+    cat("ACTION: These components are now ready for absolute scaling.\n")
+    cat("==========================================================\n")
+    
+  } else {
+    cat("\nERROR: No stable taxa remaining after driver removal.\n")
+  }
 
 } else {
-  # --- CASE: FAIL ---
+  # --- CASE: FAIL (System is Turbulent/Incoherent) ---
   cat("\n==========================================================\n")
   cat("CRITICAL ERROR: PHYSICAL COHERENCE VALIDATION FAILED\n")
   cat(sprintf("Current Physical Rho: %.6f (Required: > 0.90)\n", result$rho))
   cat("----------------------------------------------------------\n")
   cat("ACTION: DATA EXPORT TERMINATED.\n")
+  cat("The system lacks structural stability. Absolute estimation\n")
+  cat("is physically impossible for this dataset.\n")
   cat("The calculated stability is insufficient. The resulting CSV\n")
   cat("would be mathematically inconsistent.\n")
   cat("If there are sufficient components, try drop_ratio = 0.20.\n")
@@ -196,3 +226,8 @@ if (result$rho > 0.90) {
   # Halt the entire script execution
   stop("Process halted: Incoherent physical drivers detected.")
 }
+
+cat(sprintf("1. Detected Taxa (Total)      : %d\n", ncol(P_raw)))
+cat(sprintf("2. Passed 10x Floor (Policy A): %d\n", sum(valid_taxa_mask)))
+cat(sprintf("3. Final Certified (Stable)   : %d\n", length(stable_taxa_names)))
+cat(sprintf("4. Dropped Drivers (Turbulent): %d\n", length(result$dropped)))
