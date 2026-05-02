@@ -130,7 +130,7 @@ pdf("Itagaki_System_v18_Report.pdf", width = 10, height = 10)
 
 # 2. Run the analysis (The function's plot will automatically draw to the PDF)
 # Note: Ensure 'Dataset' is loaded in your environment before running this
-result <- analyze_physical_coherence_v18_integrated(Dataset, drop_ratio = 0.10)  # drop_ratio = 0.20 may be OK
+result <- analyze_physical_coherence_v18_integrated(Dataset, drop_ratio = 0.10)  # drop_ratio
 
 # 3. Add a secondary page for the Driver Table (Optional)
 plot.new()
@@ -201,6 +201,7 @@ if (result$rho > 0.90) {
     cat(sprintf("Structural Coherence (Rho)      : %.6f\n", result$rho))
     cat("----------------------------------------------------------\n")
     cat("STATUS: Ready for Absolute Scaling and Downstream Analysis.\n")
+　　cat("You have to determin the best drop_ratio.\n")
     cat("==========================================================\n")
     
   } else {
@@ -216,7 +217,7 @@ if (result$rho > 0.90) {
   cat("The physical relationship between components is turbulent.\n")
   cat("Distinction between Absolute and Relative change is IMPOSSIBLE.\n")
   cat("ACTION: Data export terminated to prevent false discovery.\n")
-  cat("If there are suffisient components, you may change drop_ratio = 0.20.\n")
+  cat("If there are suffisient components, you may change drop_ratio.\n")
   cat("==========================================================\n")
   
   # Absolute halt to ensure scientific integrity
