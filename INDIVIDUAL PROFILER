@@ -158,14 +158,7 @@ legend(x = ncol(Rel_Mat) * 1.05, y = nrow(Rel_Mat),
 # Add grid lines for clarity
 grid(nx = ncol(Rel_Mat), ny = nrow(Rel_Mat), col = "white", lty = 1, lwd = 0.5)
 
-
-# =================================================================
 # ITAGAKI-SYSTEM: PHYSICAL RELIABILITY HEATMAP (INTEGRATED)
-# -----------------------------------------------------------------
-# Feature: Fixed Row Order, 3-Tier Reliability, & Anti-Collision Layout
-# Developed by: Tatsuki Itagaki
-# =================================================================
-
 # --- 1. SET OUTPUT PDF ---
 pdf_file <- "Individual_Reliability_Heatmap_Fixed.pdf"
 pdf(pdf_file, width = 15, height = 10)
