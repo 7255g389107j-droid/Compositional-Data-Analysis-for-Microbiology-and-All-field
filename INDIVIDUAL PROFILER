@@ -159,9 +159,19 @@ legend(x = ncol(Rel_Mat) * 1.05, y = nrow(Rel_Mat),
 grid(nx = ncol(Rel_Mat), ny = nrow(Rel_Mat), col = "white", lty = 1, lwd = 0.5)
 
 
+# =================================================================
+# ITAGAKI-SYSTEM: PHYSICAL RELIABILITY HEATMAP (INTEGRATED)
+# -----------------------------------------------------------------
+# Feature: Fixed Row Order, 3-Tier Reliability, & Anti-Collision Layout
+# Developed by: Tatsuki Itagaki
+# =================================================================
 
 # --- 1. SET OUTPUT PDF ---
-pdf("System_Reliability_Heatmap.pdf", width = 12, height = 8)
+pdf_file <- "Individual_Reliability_Heatmap_Fixed.pdf"
+pdf(pdf_file, width = 15, height = 10)
+
+# Create layout: Heatmap (85%) and Legend Area (15%)
+layout(matrix(c(1, 2), nrow = 1), widths = c(0.85, 0.15))
 
 # --- 2. RELIABILITY MATRIX GENERATION ---
 # 0: Absent, 1: Uncertain, 2: Reliable
@@ -180,31 +190,47 @@ for(i in 1:nrow(P_raw)) {
   }
 }
 
-# --- 3. VISUALIZATION (BASE R) ---
-# Color palette corresponding to 0, 1, 2
-my_colors <- c("#E0E0E0", "#F1C40F", "#2C3E50")
+# --- 3. DATA REFINEMENT for image() ---
+# Sort taxa (columns) by total reliability score
+taxa_order <- order(colSums(Rel_Mat), decreasing = TRUE)
+sorted_mat <- Rel_Mat[, taxa_order]
 
-par(mar = c(10, 8, 4, 12)) # Adjusted right margin for legend
+# IMPORTANT: Reverse rows for top-to-bottom display in image()
+# image() plots y=1 at the bottom; rev() ensures Row 1 is at the top.
+plot_ready_mat <- t(apply(sorted_mat, 2, rev))
 
-# Base R image function (Transpose matrix because image() plots rows on x-axis)
-image(1:ncol(Rel_Mat), 1:nrow(Rel_Mat), t(Rel_Mat),
-      col = my_colors,
-      breaks = c(-0.5, 0.5, 1.5, 2.5), # Define boundaries for discrete categories
+# --- 4. HEATMAP RENDERING ---
+par(mar = c(12, 10, 5, 2), bg = "#FDFDFD")
+status_colors <- c("#E0E0E0", "#F1C40F", "#2C3E50") # Gray, Yellow, Blue-Black
+
+image(1:ncol(sorted_mat), 1:nrow(sorted_mat), plot_ready_mat,
+      col = status_colors,
+      breaks = c(-0.5, 0.5, 1.5, 2.5),
       xaxt = "n", yaxt = "n",
       xlab = "", ylab = "",
-      main = "System Reliability Heatmap")
+      main = "INDIVIDUAL RELIABILITY HEATMAP (Strict Mapping)")
 
-# Add Axes
-axis(1, at = 1:ncol(Rel_Mat), labels = colnames(Rel_Mat), las = 2, cex.axis = 0.7)
-axis(2, at = 1:nrow(Rel_Mat), labels = rownames(Rel_Mat), las = 1, cex.axis = 0.8)
+# Axes
+axis(1, at = 1:ncol(sorted_mat), labels = colnames(sorted_mat), las = 2, cex.axis = 0.7)
+axis(2, at = 1:nrow(sorted_mat), labels = rev(rownames(sorted_mat)), las = 1, cex.axis = 0.8)
 
-# Add Legend
-legend(x = ncol(Rel_Mat) * 1.1, y = nrow(Rel_Mat),
+# Grid lines for anti-collision visualization
+abline(v = (1:ncol(sorted_mat)) + 0.5, col = "white", lwd = 0.5)
+abline(h = (1:nrow(sorted_mat)) + 0.5, col = "white", lwd = 0.5)
+
+# --- 5. SEPARATED LEGEND RENDERING ---
+par(mar = c(0, 0, 0, 0))
+plot.new()
+
+legend("center",
        legend = c("Reliable (>=10x Floor)", "Uncertain (Presence)", "Absent (Zero)"),
-       fill = rev(my_colors),
-       xpd = TRUE, bty = "n", cex = 0.9)
-
-# Add grid lines for clarity
-grid(nx = ncol(Rel_Mat), ny = nrow(Rel_Mat), col = "white", lty = 1, lwd = 0.5)
+       fill = rev(status_colors),
+       border = "black",
+       bty = "n",
+       cex = 1.1,
+       title = "Reliability Status",
+       title.font = 2)
 
 dev.off()
+
+cat(sprintf("\nProcess Complete: %s has been generated.\n", pdf_file))
