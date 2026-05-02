@@ -219,6 +219,7 @@ if (result$rho > 0.90) {
   cat("The physical relationship between components is turbulent.\n")
   cat("Distinction between Absolute and Relative change is IMPOSSIBLE.\n")
   cat("ACTION: Data export terminated to prevent false discovery.\n")
+  cat("If there are suffisient components, you may change drop_ratio = 0.20.\n")
   cat("==========================================================\n")
   
   # Absolute halt to ensure scientific integrity
