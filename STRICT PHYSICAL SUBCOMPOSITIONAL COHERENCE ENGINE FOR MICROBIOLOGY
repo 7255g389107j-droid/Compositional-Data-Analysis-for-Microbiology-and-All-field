@@ -195,7 +195,7 @@ if (result$rho > 0.90) {
     write.csv(P_certified, data_output, row.names = TRUE)
     
     cat("----------------------------------------------------------\n")
-    cat(sprintf("Analyzed Components (Systemic) : %d\n", length(result$ir_full))) # 15
+    cat(sprintf("Analyzed Components (Systemic) : %d\n", length(result$ir_full)))
     cat(sprintf("Certified Components (Stable)   : %d\n", length(stable_taxa_names)))
     cat(sprintf("Turbulent Drivers Dropped       : %d\n", length(result$dropped)))
     cat(sprintf("Structural Coherence (Rho)      : %.6f\n", result$rho))
