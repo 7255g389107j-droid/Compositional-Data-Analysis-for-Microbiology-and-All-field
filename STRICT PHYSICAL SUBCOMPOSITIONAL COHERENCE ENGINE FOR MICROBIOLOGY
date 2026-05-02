@@ -38,9 +38,6 @@ analyze_physical_coherence_v18_integrated <- function(Dataset,
   }
 
   valid_mask <- apply(is_reliable_mat, 2, all)
-  
-　cat("DEBUG: Internal Passed Names:", colnames(P_raw)[valid_mask], "\n")
-　cat("DEBUG: Internal Count:", sum(valid_mask), "\n")
 
   if(sum(valid_mask) < 5) stop("CRITICAL ERROR: Insufficient components for coherence testing.")
   
