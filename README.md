@@ -33,12 +33,9 @@ In microbiology and nutrition science, the "Total" is often an artifact of the m
 
 ## Academic Citation
 If you use this software or its logic in your research, please cite the following works:
-- **Itagaki, T (2024)**. DOI: 10.20944/preprints202402.0275.v3
+- **Ohta, T. (2011)**. DOI: 10.1007/s11004-011-9332-y
 - **Itagaki, T (2024)**. DOI: 10.3390/microorganisms12071484
 - **Itagaki, T (2025)**. DOI: 10.3390/nu17233681
-- **Itagaki, T (2026)**. DOI: 10.13140/RG.2.2.21953.93284
-- **Itagaki, T (2026)**. DOI: 10.13140/RG.2.2.35015.25762
-
 ---
 
 ## License
