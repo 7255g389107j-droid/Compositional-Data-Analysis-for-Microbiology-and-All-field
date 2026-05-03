@@ -4,7 +4,7 @@
 # Methodology: Exhaustive N-1 Anchor Triangulation
 # Logic:
 #   - MANDATORY: Must pass Geometric Centroid Basis (Global Gate)
-#   - ROBUST   : Centroid PASS + Anchor Support >= 50%
+#   - ROBUST   : Centroid PASS + Anchor Support > 50%
 #   - EMERGING : Centroid PASS + Anchor Support 33.3% - 50%
 #   - MARGINAL : Centroid PASS + Anchor Support < 33.3%
 # Features: 
@@ -87,9 +87,9 @@ pass_ratio <- pass_counts / total_n1
 passed_centroid <- t_names %in% centroid_res$verified
 
 # Define Tiers based on Instructions
-robust_taxa   <- t_names[passed_centroid & pass_ratio >= 0.50]
-emerging_taxa <- t_names[passed_centroid & pass_ratio >= 0.33 & pass_ratio < 0.50]
-marginal_taxa <- t_names[passed_centroid & pass_ratio < 0.33]
+robust_taxa   <- t_names[passed_centroid & pass_ratio > 0.50]
+emerging_taxa <- t_names[passed_centroid & pass_ratio > 0.33 & pass_ratio < 0.50]
+marginal_taxa <- t_names[passed_centroid & pass_ratio <= 0.33]
 
 # --- [5. FINAL QUANTITATIVE RECOVERY REPORT] ---
 cat("\n==========================================================\n")
@@ -108,13 +108,13 @@ diag_df <- data.frame(
   Ratio = paste0(round(pass_ratio * 100, 1), "%"),
   SNR_Real = round(centroid_res$snr, 4),
   Status = ifelse(!passed_centroid, "REJECTED",
-           ifelse(pass_ratio >= 0.50, "ROBUST",
-           ifelse(pass_ratio >= 0.33, "EMERGING", "MARGINAL")))
+           ifelse(pass_ratio > 0.50, "ROBUST",
+           ifelse(pass_ratio > 0.33, "EMERGING", "MARGINAL")))
 )
 print(diag_df, row.names = FALSE)
 
 cat("----------------------------------------------------------\n")
-cat("[ROBUST TAXA NAME LIST (Support >= 50%)]:\n")
+cat("[ROBUST TAXA NAME LIST (Support > 50%)]:\n")
 if(length(robust_taxa) > 0) print(robust_taxa) else cat("None Detected\n")
 
 cat("\n[EMERGING TAXA NAME LIST (Support 33-50%)]:\n")
