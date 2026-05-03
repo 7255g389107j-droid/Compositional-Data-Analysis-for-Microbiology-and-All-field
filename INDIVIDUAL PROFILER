@@ -20,7 +20,7 @@ if(is.null(sample_ids)) sample_ids <- paste0("S_", 1:nrow(P_raw))
 n_s <- nrow(P_raw)
 
 # --- 2. ENHANCED VISUALIZATION & CALCULATION ---
-pdf_file <- "ITAGAKI_Strict_Reliability_Report.pdf"
+pdf_file <- "ITAGAKI_Strict_Individual_Reliability_Report.pdf"
 pdf(pdf_file, width = 14, height = 10)
 
 # To store summary data
