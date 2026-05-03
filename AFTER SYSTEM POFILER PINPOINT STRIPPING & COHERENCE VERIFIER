@@ -1,0 +1,84 @@
+# =================================================================
+# ITAGAKI-SYSTEM: PINPOINT STRIPPING & COHERENCE VERIFIER
+# -----------------------------------------------------------------
+# Objective: Evaluate the physical integrity of the remaining system 
+#            after excluding specific targeted components.
+
+verify_pinpoint_stripping <- function(Universal_Reliable_Taxa_ZeroFree, target_taxa_to_remove, global_eff_lib) {
+  
+  eff_lib <- global_eff_lib
+  
+  # 2. CORE IR CALCULATION (Baseline)
+  calc_ir <- function(dat, lib) {
+    L <- log(dat)
+    obs_v <- apply(L, 2, var)
+    theo_v <- 1 / (colMeans(dat) * lib)
+    return(obs_v / theo_v)
+  }
+    
+    
+  ir_full <- calc_ir(Universal_Reliable_Taxa_ZeroFree, eff_lib)
+  all_names <- colnames(Universal_Reliable_Taxa_ZeroFree)
+  
+  # 3. EXCLUSION OF TARGETED COMPONENTS
+  # target_taxa_to_remove can be a vector of names or column indices.
+  if(is.numeric(target_taxa_to_remove)) {
+    target_names <- all_names[target_taxa_to_remove]
+  } else {
+    target_names <- target_taxa_to_remove
+  }
+  
+  remaining_names <- setdiff(all_names, target_names)
+  
+  if(length(remaining_names) < 2) {
+    stop("CRITICAL ERROR: Insufficient components remaining. Excessive stripping detected.")
+  }
+  
+  # 4. SUBCOMPOSITIONAL RE-CLOSING
+  P_reduced <- Universal_Reliable_Taxa_ZeroFree[, remaining_names, drop = FALSE]
+  # Physical Reconstruction: Ensure the subcomposition closes to 1.
+  P_reduced <- sweep(P_reduced, 1, rowSums(P_reduced), "/") 
+  
+  # 5. RE-CALCULATION OF IR FOR THE SUBCOMPOSITION
+  ir_red <- calc_ir(P_reduced, eff_lib)
+  
+  # 6. PHYSICAL INTEGRITY ASSESSMENT (Spearman's Rho)
+  # Assess the invariance of the physical ranking (Original vs. Subcomposition).
+  rho_val <- cor(ir_full[remaining_names], ir_red, method = "spearman")
+  
+  # 7. SCIENTIFIC DIAGNOSTIC REPORT
+  cat("\n==========================================================\n")
+  cat("      ITAGAKI-SYSTEM: PINPOINT STRIPPING REPORT           \n")
+  cat("==========================================================\n")
+  cat("STRIPPED TAXA   :", paste(target_names, collapse=", "), "\n")
+  cat("REMAINING TAXA  :", length(remaining_names), "\n")
+  cat(sprintf("PHYSICAL RHO    : %.6f\n", rho_val))
+  cat("----------------------------------------------------------\n")
+  
+  status <- ifelse(rho_val > 0.95, "ULTRA STABLE",
+            ifelse(rho_val > 0.90, "STABLE", "INCOHERENT / TURBULENT"))
+  
+  cat(sprintf("SYSTEM STATUS   : %s\n", status))
+  cat("==========================================================\n")
+  
+  # VISUAL VALIDATION: LAMINAR FLOW CHECK (Rank Invariance)
+  plot(rank(ir_full[remaining_names]), rank(ir_red),
+       pch=21, bg="#2ECC71", col="#27AE60", cex=2,
+       main=paste("Target Stripped:", paste(target_names, collapse=" ")),
+       xlab="Original Physical Rank", ylab="New Subcompositional Rank")
+  abline(0, 1, lty=2, col="red")
+  text(min(rank(ir_full[remaining_names])), max(rank(ir_red)), 
+       labels=paste("Rho =", round(rho_val, 4)), pos=4, font=2)
+
+  return(list(rho = rho_val, remaining = remaining_names))
+}
+
+# --- EXECUTION EXAMPLE ---
+# Example: Strip the top 2 drivers to see if the core system stabilizes.
+# my_targets <- c("Taxon_1", "Taxon_2") 
+
+# 1.
+global_eff_lib <- 1 / mean(apply(Dataset, 1, function(x) min(x[x > 0])))
+
+# 2. 
+result <- verify_pinpoint_stripping(Universal_Reliable_Taxa_ZeroFree, my_targets, global_eff_lib)
