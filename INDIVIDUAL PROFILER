@@ -140,7 +140,7 @@ image(1:ncol(Rel_Mat), 1:nrow(Rel_Mat), t(Rel_Mat),
       breaks = c(-0.5, 0.5, 1.5, 2.5), # Define boundaries for discrete categories
       xaxt = "n", yaxt = "n",
       xlab = "", ylab = "",
-      main = "System Reliability Heatmap")
+      main = "Individual Reliability Heatmap")
 
 # Add Axes
 axis(1, at = 1:ncol(Rel_Mat), labels = colnames(Rel_Mat), las = 2, cex.axis = 0.7)
@@ -173,36 +173,33 @@ for(i in 1:nrow(P_raw)) {
   obs_vals <- current_sample[current_sample > 0]
   
   if(length(obs_vals) > 0) {
-    floor_i <- min(obs_vals)
+    floor_i <- min(obs_vals) # 1 / (1/min) is just min
     safety_margin <- floor_i * 10
+    
+    # Logic Assignment
     Rel_Mat[i, current_sample > 0] <- 1
     Rel_Mat[i, current_sample >= safety_margin] <- 2
   }
 }
 
-# --- 3. DATA REFINEMENT for image() ---
-# Sort taxa (columns) by total reliability score
-taxa_order <- order(colSums(Rel_Mat), decreasing = TRUE)
-sorted_mat <- Rel_Mat[, taxa_order]
+# --- 3. VISUALIZATION (BASE R) ---
+# Define color palette: 0=Gray, 1=Yellow, 2=Dark Blue
+my_colors <- c("#E0E0E0", "#F1C40F", "#2C3E50")
 
-# IMPORTANT: Reverse rows for top-to-bottom display in image()
-# image() plots y=1 at the bottom; rev() ensures Row 1 is at the top.
-plot_ready_mat <- t(apply(sorted_mat, 2, rev))
+# Adjust margins for labels
+par(mar = c(10, 8, 4, 10))
 
-# --- 4. HEATMAP RENDERING ---
-par(mar = c(12, 10, 5, 2), bg = "#FDFDFD")
-status_colors <- c("#E0E0E0", "#F1C40F", "#2C3E50") # Gray, Yellow, Blue-Black
-
-image(1:ncol(sorted_mat), 1:nrow(sorted_mat), plot_ready_mat,
-      col = status_colors,
-      breaks = c(-0.5, 0.5, 1.5, 2.5),
+# Base R image function (Transpose matrix because image() plots rows on x-axis)
+image(1:ncol(Rel_Mat), 1:nrow(Rel_Mat), t(Rel_Mat),
+      col = my_colors,
+      breaks = c(-0.5, 0.5, 1.5, 2.5), # Define boundaries for discrete categories
       xaxt = "n", yaxt = "n",
       xlab = "", ylab = "",
-      main = "INDIVIDUAL RELIABILITY HEATMAP (Strict Mapping)")
+      main = "Individual Reliability Heatmap")
 
-# Axes
-axis(1, at = 1:ncol(sorted_mat), labels = colnames(sorted_mat), las = 2, cex.axis = 0.7)
-axis(2, at = 1:nrow(sorted_mat), labels = rev(rownames(sorted_mat)), las = 1, cex.axis = 0.8)
+# Add Axes
+axis(1, at = 1:ncol(Rel_Mat), labels = colnames(Rel_Mat), las = 2, cex.axis = 0.7)
+axis(2, at = 1:nrow(Rel_Mat), labels = rownames(Rel_Mat), las = 1, cex.axis = 0.8)
 
 # Grid lines for anti-collision visualization
 abline(v = (1:ncol(sorted_mat)) + 0.5, col = "white", lwd = 0.5)
