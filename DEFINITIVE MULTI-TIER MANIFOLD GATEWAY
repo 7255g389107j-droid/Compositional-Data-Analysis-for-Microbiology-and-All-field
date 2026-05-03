@@ -1,0 +1,187 @@
+# =================================================================
+# ITAGAKI-SYSTEM V11200.0: DEFINITIVE MULTI-TIER MANIFOLD GATEWAY
+# -----------------------------------------------------------------
+# Methodology: Exhaustive N-1 Anchor Triangulation
+# Logic:
+#   - MANDATORY: Must pass Geometric Centroid Basis (Global Gate)
+#   - ROBUST   : Centroid PASS + Anchor Support >= 50%
+#   - EMERGING : Centroid PASS + Anchor Support 33.3% - 50%
+#   - MARGINAL : Centroid PASS + Anchor Support < 33.3%
+# Features: 
+#   - Manual SNR Limit & Effective Library Size Calculation
+#   - Automated Tiered Component Listing
+#   - Selective Visualization (ROBUST Taxa Only)
+# Developed by: Tatsuki Itagaki (2026)
+# Copyright (c) 2026 Tatsuki Itagaki
+# License: MIT License (https://opensource.org)
+# 
+# ACADEMIC CITATION:
+# If you use this software or its logic in your research, 
+# please cite the following works:
+# Ohta, T. (2011). DOI: 10.1007/s11004-011-9332-y
+# Itagaki, T (2024). DOI: 10.3390/microorganisms12071484
+# Itagaki, T (2025). DOI: 10.3390/nu17233681
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.21953.93284
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.35015.25762
+# =================================================================
+
+# --- [0. OPERATOR CONFIGURATION] ---
+manual_threshold <- 0.0001
+snr_sensitivity  <- 1.8    # SNR: Drift correction intensity, It would be best not to lower it any further.
+                           # Setting snr_sensitivity to 1.0e+31 negates the lag in the decrease.
+pass_snr_limit   <- 2.0    # User-defined SNR Threshold
+                           # Please set the upper limit manually.
+set.seed(42)
+
+# --- [1. DATA PURIFICATION & SYSTEM METRICS] ---
+raw_m <- as.matrix(Dataset[, colSums(Dataset == 0) == 0])
+valid_mask <- apply(raw_m, 2, function(x) all(x >= manual_threshold))
+d_m <- sweep(raw_m[, valid_mask], 1, rowSums(raw_m[, valid_mask]), "/")
+n_s <- nrow(d_m); n_t <- ncol(d_m); t_names <- colnames(d_m)
+
+# Calculate Effective Library Size (EFF_LIB)
+eff_lib <- 1 / mean(apply(raw_m[, valid_mask, drop=FALSE], 2, min))
+log_p <- log(d_m); g_center <- rowMeans(log_p)
+
+# --- [2. EXHAUSTIVE ANCHOR PREPARATION (N-1 BASIS)] ---
+get_metrics <- function(P) {
+  L <- log(P); obs_v <- apply(L, 2, var); vlr <- var(L)
+  pi_s <- 1 / (apply(outer(obs_v, obs_v, "+") - 2 * vlr, 1, median))
+  return(list(pi = pi_s))
+}
+metrics <- get_metrics(d_m)
+# Evaluate all valid mathematical degrees of freedom (N-1 anchors)
+anchor_indices <- order(rank(-metrics$pi))[1:(n_t - 1)]
+total_n1 <- length(anchor_indices)
+
+# --- [3. QUANTITATIVE DIAGNOSTIC ENGINE] ---
+process_basis <- function(target_idx, is_centroid = FALSE) {
+  if(is_centroid) {
+    rho_fact <- rep(0, n_s)
+  } else {
+    rho_fact <- (log_p[, target_idx] - g_center) / snr_sensitivity
+  }
+  sf_locked <- exp(-rho_fact) / exp(-rho_fact[1])
+  abs_m <- sweep(d_m, 1, sf_locked, "*")
+  
+  # Growth Gate (Monotonicity + SNR Threshold)
+  m_check <- apply(abs_m, 2, function(x) all(diff(x) > 0))
+  s_check <- apply(abs_m, 2, function(x) (x[n_s] / x[1]) >= pass_snr_limit)
+  
+  return(list(verified = t_names[m_check & s_check], 
+              snr = abs_m[n_s, ] / abs_m[1, ], 
+              sf = sf_locked))
+}
+
+# Run Analysis for Geometric Centroid and All N-1 Anchors
+centroid_res <- process_basis(NULL, is_centroid = TRUE)
+anchor_results <- lapply(anchor_indices, process_basis)
+
+# --- [4. MULTI-TIER CONSENSUS SCORING] ---
+pass_counts <- setNames(numeric(n_t), t_names)
+for(res in anchor_results) {
+  pass_counts[res$verified] <- pass_counts[res$verified] + 1
+}
+
+pass_ratio <- pass_counts / total_n1
+passed_centroid <- t_names %in% centroid_res$verified
+
+# Define Tiers based on Instructions
+robust_taxa   <- t_names[passed_centroid & pass_ratio >= 0.50]
+emerging_taxa <- t_names[passed_centroid & pass_ratio >= 0.33 & pass_ratio < 0.50]
+marginal_taxa <- t_names[passed_centroid & pass_ratio < 0.33]
+
+# --- [5. FINAL QUANTITATIVE RECOVERY REPORT] ---
+cat("\n==========================================================\n")
+cat("   ITAGAKI V11200.0: COMPONENT ANALYSIS REPORT\n")
+cat("==========================================================\n")
+cat(sprintf("EFFECTIVE LIB SIZE  : %.2e\n", eff_lib))
+cat(sprintf("MANUAL SNR LIMIT    : %.4f\n", pass_snr_limit))
+cat(sprintf("TOTAL N-1 ANCHORS   : %d\n", total_n1))
+cat("----------------------------------------------------------\n")
+
+# FULL TABLE OUTPUT
+diag_df <- data.frame(
+  Taxon = t_names,
+  Centroid_Pass = passed_centroid,
+  Pass_Count = paste0(pass_counts, "/", total_n1),
+  Ratio = paste0(round(pass_ratio * 100, 1), "%"),
+  SNR_Real = round(centroid_res$snr, 4),
+  Status = ifelse(!passed_centroid, "REJECTED",
+           ifelse(pass_ratio >= 0.50, "ROBUST",
+           ifelse(pass_ratio >= 0.33, "EMERGING", "MARGINAL")))
+)
+print(diag_df, row.names = FALSE)
+
+cat("----------------------------------------------------------\n")
+cat("[ROBUST TAXA NAME LIST (Support >= 50%)]:\n")
+if(length(robust_taxa) > 0) print(robust_taxa) else cat("None Detected\n")
+
+cat("\n[EMERGING TAXA NAME LIST (Support 33-50%)]:\n")
+if(length(emerging_taxa) > 0) print(emerging_taxa) else cat("None Detected\n")
+
+cat("\n[MARGINAL TAXA NAME LIST (Support < 33%)]:\n")
+if(length(marginal_taxa) > 0) print(marginal_taxa) else cat("None Detected\n")
+cat("----------------------------------------------------------\n")
+
+# --- [OUTPUT CONFIGURATION: PDF GENERATION] ---
+pdf_filename <- "ITAGAKI_Recovery_Analysis.pdf"
+# Using a stable 16:9 aspect ratio to ensure enough plotting area
+pdf(pdf_filename, width = 16, height = 9)
+
+# --- [VISUALIZATION: SIDE-BY-SIDE WITHOUT RIGHT LABELS] ---
+if(length(robust_taxa) > 0 || length(emerging_taxa) > 0) {
+  
+  abs_r_all <- if(length(robust_taxa) > 0) sweep(d_m[, robust_taxa, drop = FALSE], 1, centroid_res$sf, "*") else NULL
+  abs_e_all <- if(length(emerging_taxa) > 0) sweep(d_m[, emerging_taxa, drop = FALSE], 1, centroid_res$sf, "*") else NULL
+  
+  # Unified scale calculation
+  global_y_range <- range(c(abs_r_all, abs_e_all), na.rm = TRUE)
+  # Increase upper limit (1.25) to provide clear space for the top-left legend
+  global_y_lim <- c(global_y_range[1], global_y_range[2] * 1.25)
+
+  # Layout: 1 row, 2 columns
+  # Reduced right margin (mar[4]=2) since labels are removed
+  par(mfrow = c(1, 2), mar = c(5, 5, 5, 2), mgp = c(3, 0.7, 0), bg = "#FDFDFD")
+  
+  # --- [LEFT PLOT: ROBUST TAXA] ---
+  if(!is.null(abs_r_all)) {
+    cols_r <- rainbow(length(robust_taxa))
+    matplot(abs_r_all, type = "b", pch = 16, lty = 1, lwd = 3, col = cols_r,
+            main = "ROBUST TAXA\n(Geometric Centroid Anchor)",
+            xlab = "Sample Index", ylab = "", las = 1,
+            ylim = global_y_lim, cex.axis = 0.8)
+    
+    mtext("Abs Mass Scale (Rel. to S1)", side = 2, line = 3.5, font = 2, cex = 0.9)
+    grid(col = "gray80")
+    
+    # COMPREHENSIVE LEGEND (Top-Left, Bold-Italic)
+    legend("topleft", legend = robust_taxa, col = cols_r, lty = 1, lwd = 2, 
+           cex = 0.7, bty = "n", text.font = 4, ncol = 1)
+  } else {
+    plot.new()
+    text(0.5, 0.5, "No Robust Taxa Detected", cex = 1.2)
+  }
+
+  # --- [RIGHT PLOT: EMERGING TAXA] ---
+  if(!is.null(abs_e_all)) {
+    cols_e <- rainbow(length(emerging_taxa))
+    matplot(abs_e_all, type = "b", pch = 16, lty = 1, lwd = 3, col = cols_e,
+            main = "EMERGING TAXA\n(Geometric Centroid Anchor)",
+            xlab = "Sample Index", ylab = "", las = 1,
+            ylim = global_y_lim, cex.axis = 0.8)
+    
+    mtext("Abs Mass Scale (Rel. to S1)", side = 2, line = 3.5, font = 2, cex = 0.9)
+    grid(col = "gray80")
+    
+    # COMPREHENSIVE LEGEND (Top-Left, Bold-Italic)
+    legend("topleft", legend = emerging_taxa, col = cols_e, lty = 1, lwd = 2, 
+           cex = 0.7, bty = "n", text.font = 4, ncol = 1)
+  } else {
+    plot.new()
+    text(0.5, 0.5, "No Emerging Taxa Detected", cex = 1.2)
+  }
+}
+
+dev.off()
+cat(sprintf("\nAnalysis report generated: %s\n", pdf_filename))
