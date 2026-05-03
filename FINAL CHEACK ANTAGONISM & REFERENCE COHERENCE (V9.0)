@@ -17,12 +17,17 @@
 # Itagaki, T (2026). DOI: 10.13140/RG.2.2.35015.25762
 # =================================================================
 
+
+certified_taxa_names <- colnames(result$cleansed_data)
+P_raw <- as.matrix(Dataset)
+P_certified_raw <- P_raw[, certified_taxa_names, drop = FALSE]
+
 # --- [CORE ENGINE] ---
-evaluate_antagonistic_chaos <- function(P_certified, threshold = floor_i * 10) {
+evaluate_antagonistic_chaos <- function(Dataset, threshold = 0) {
   
   # 1. PREPARATION & FILTERING
-  d_m <- as.matrix(P_certified)
-  valid_mask <- apply(d_m, 2, function(x) all(x >= threshold))
+  d_m <- as.matrix(P_certified_raw)
+  valid_mask <- apply(d_m, 2, function(x) all(x > 0))
   d_clean <- d_m[, valid_mask, drop = FALSE]
   n_taxa <- ncol(d_clean)
   
