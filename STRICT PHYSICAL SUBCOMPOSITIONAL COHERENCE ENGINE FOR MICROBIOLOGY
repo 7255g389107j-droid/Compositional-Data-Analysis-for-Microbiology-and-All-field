@@ -93,6 +93,7 @@ analyze_physical_coherence_v18_integrated <- function(Dataset,
   cat(sprintf("Analyzed Components      : %d\n", length(ir_full)))
   cat(sprintf("Dropped Drivers (Top IR) : %d (%.1f%% of system)\n", n_drop, drop_ratio * 100))
   cat(sprintf("Physical Rho (IR-based)  : %.6f\n", rho_val))
+　cat("Rho = 1 is suspicious Dataset.\n")
   cat("----------------------------------------------------------\n")
   
   if(rho_val > 0.95) {
