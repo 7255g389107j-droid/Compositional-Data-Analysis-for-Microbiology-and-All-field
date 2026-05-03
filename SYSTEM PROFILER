@@ -21,7 +21,7 @@ if(is.null(sample_ids)) sample_ids <- paste0("S_", 1:nrow(P_raw))
 n_s <- nrow(P_raw)
 
 # --- 2. ENHANCED VISUALIZATION & CALCULATION ---
-pdf_file <- "ITAGAKI_Strict_Reliability_Report.pdf"
+pdf_file <- "ITAGAKI_Strict_Individual_Reliability_Report.pdf"
 pdf(pdf_file, width = 14, height = 10)
 
 # To store summary data
@@ -129,7 +129,7 @@ for(i in 1:n_s) {
   non_zero_mask <- current_sample > 0
   
   if(any(non_zero_mask)) {
-    floor_i <- 1 / (1 / min(current_sample[non_zero_mask]))
+    floor_i <- min(current_sample[non_zero_mask])
     
     # Identify Reliable (1) vs Detected but Unreliable (0)
     rel_status_mat[i, non_zero_mask] <- ifelse(current_sample[non_zero_mask] >= (floor_i * 10), 1, 0)
@@ -254,7 +254,7 @@ for(i in 1:n_s) {
   
   if(length(obs_proportions) > 0) {
     # Physics-based threshold calculation
-    threshold_i <- (1 / (1 / min(obs_proportions))) * 10
+    threshold_i <- min(obs_proportions) * 10
     reliability_matrix[i, ] <- current_sample >= threshold_i
   }
 }
