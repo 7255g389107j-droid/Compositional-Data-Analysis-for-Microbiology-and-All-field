@@ -39,8 +39,8 @@ valid_mask <- apply(raw_m, 2, function(x) all(x >= manual_threshold))
 d_m <- sweep(raw_m[, valid_mask], 1, rowSums(raw_m[, valid_mask]), "/")
 n_s <- nrow(d_m); n_t <- ncol(d_m); t_names <- colnames(d_m)
 
-# Calculate Effective Library Size (EFF_LIB)
-eff_lib <- 1 / mean(apply(raw_m[, valid_mask, drop=FALSE], 2, min))
+# Effective Library Size (EFF_LIB)
+eff_lib_i
 log_p <- log(d_m); g_center <- rowMeans(log_p)
 
 # --- [2. EXHAUSTIVE ANCHOR PREPARATION (N-1 BASIS)] ---
@@ -95,7 +95,7 @@ marginal_taxa <- t_names[passed_centroid & pass_ratio <= 0.33]
 cat("\n==========================================================\n")
 cat("   ITAGAKI V11200.0: COMPONENT ANALYSIS REPORT\n")
 cat("==========================================================\n")
-cat(sprintf("EFFECTIVE LIB SIZE  : %.2e\n", eff_lib))
+cat(sprintf("EFFECTIVE LIB SIZE  : %.2e\n", eff_lib_i))
 cat(sprintf("MANUAL SNR LIMIT    : %.4f\n", pass_snr_limit))
 cat(sprintf("TOTAL N-1 ANCHORS   : %d\n", total_n1))
 cat("----------------------------------------------------------\n")
