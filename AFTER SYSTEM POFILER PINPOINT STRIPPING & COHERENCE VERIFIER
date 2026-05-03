@@ -1,84 +1,79 @@
-# =================================================================
-# ITAGAKI-SYSTEM: PINPOINT STRIPPING & COHERENCE VERIFIER
-# -----------------------------------------------------------------
-# Objective: Evaluate the physical integrity of the remaining system 
-#            after excluding specific targeted components.
+# ITAGAKI-SYSTEM V18.1 Extended: Manual Driver Stripping Logic
+# Logic: Provides an option to specify exact columns to drop instead of top IR.
 
-# Universal_Reliable_Taxa_ZeroFree <- read.table("clipboard", header=TRUE, sep="\t", na.strings=c("", "NA"), dec=".", fill=TRUE, quote="\"", comment.char="", strip.white=TRUE, fileEncoding="UTF-8")
-
-global_eff_lib <- 1 / mean(apply(dataset_numeric, 1, function(x) min(x[x > 0])))
-baseline_means <- colMeans(Dataset)
-
-verify_pinpoint_stripping <- function(Universal_Reliable_Taxa_ZeroFree, target_taxa_to_remove, global_eff_lib) {
+analyze_physical_coherence_v18_manual <- function(Dataset, 
+                                                  drop_ratio = 0.10,          
+                                                  manual_drop_names = NULL) {
   
-  eff_lib <- global_eff_lib
+  # --- 1. INITIALIZATION ---
+  P_raw <- as.matrix(Dataset)
+  n_s <- nrow(P_raw)
+  n_t <- ncol(P_raw)
   
-  # 2. CORE IR CALCULATION (Baseline)
+  sample_minima <- apply(P_raw, 1, function(x) min(x[x > 0]))
+  is_reliable_mat <- matrix(FALSE, nrow = n_s, ncol = n_t)
+  
+  for(i in 1:n_s) {
+    threshold_i <- sample_minima[i] * 10
+    is_reliable_mat[i, ] <- P_raw[i, ] >= threshold_i
+  }
+
+  valid_mask <- apply(is_reliable_mat, 2, all)
+  if(sum(valid_mask) < 5) stop("CRITICAL ERROR: Insufficient components.")
+  
+  P_clean <- P_raw[, valid_mask, drop = FALSE]
+  eff_lib <- 1 / mean(apply(P_clean, 2, min))
+  
   calc_ir <- function(dat, lib) {
     L <- log(dat)
     obs_v <- apply(L, 2, var)
-    theo_v <- 1 / (ref_means[names(obs_v)] * lib)
+    theo_v <- 1 / (colMeans(dat) * lib)
     return(obs_v / theo_v)
   }
-    
-    
-  ir_full <- calc_ir(Universal_Reliable_Taxa_ZeroFree, eff_lib, baseline_means)
-  all_names <- colnames(Universal_Reliable_Taxa_ZeroFree)
   
-  # 3. EXCLUSION OF TARGETED COMPONENTS
-  # target_taxa_to_remove can be a vector of names or column indices.
-  if(is.numeric(target_taxa_to_remove)) {
-    target_names <- all_names[target_taxa_to_remove]
+  ir_full <- calc_ir(P_clean, eff_lib)
+  comp_names <- names(ir_full)
+  
+  # --- 2. LOGIC: STRIPPING PHASE (MANUAL vs AUTOMATIC) ---
+  if (!is.null(manual_drop_names)) {
+    # Check if specified names exist in the cleaned dataset
+    dropped_names <- intersect(manual_drop_names, comp_names)
+    if (length(dropped_names) == 0) stop("ERROR: None of the specified names found in the dataset.")
+    
+    drop_indices <- which(comp_names %in% dropped_names)
+    strip_mode <- "MANUAL (User Specified)"
   } else {
-    target_names <- target_taxa_to_remove
+    # Default: Original Top IR stripping logic
+    n_drop <- max(1, floor(length(ir_full) * drop_ratio))
+    drop_indices <- order(ir_full, decreasing = TRUE)[1:n_drop]
+    dropped_names <- comp_names[drop_indices]
+    strip_mode <- paste0("AUTO (Top ", drop_ratio * 100, "% IR)")
   }
   
-  remaining_names <- setdiff(all_names, target_names)
+  # --- 3. RE-CALCULATION & COHERENCE ---
+  P_reduced <- P_clean[, -drop_indices, drop = FALSE]
+  P_reduced <- sweep(P_reduced, 1, rowSums(P_reduced), "/") # Closing
   
-  if(length(remaining_names) < 2) {
-    stop("CRITICAL ERROR: Insufficient components remaining. Excessive stripping detected.")
-  }
-  
-  # 4. SUBCOMPOSITIONAL
-  P_reduced <- Universal_Reliable_Taxa_ZeroFree[, remaining_names, drop = FALSE]
-  
-  
-  # 5. RE-CALCULATION OF IR FOR THE SUBCOMPOSITION
-  ir_red <- calc_ir(P_reduced, eff_lib, baseline_means)
-  
-  # 6. PHYSICAL INTEGRITY ASSESSMENT (Spearman's Rho)
-  # Assess the invariance of the physical ranking (Original vs. Subcomposition).
+  ir_red <- calc_ir(P_reduced, eff_lib)
+  remaining_names <- names(ir_red)
   rho_val <- cor(ir_full[remaining_names], ir_red, method = "spearman")
   
-  # 7. SCIENTIFIC DIAGNOSTIC REPORT
+  # --- 4. OUTPUT REPORT ---
   cat("\n==========================================================\n")
-  cat("      ITAGAKI-SYSTEM: PINPOINT STRIPPING REPORT           \n")
+  cat("      ITAGAKI-SYSTEM V18.1: MANUAL STRIPPING REPORT       \n")
   cat("==========================================================\n")
-  cat("STRIPPED TAXA   :", paste(target_names, collapse=", "), "\n")
-  cat("REMAINING TAXA  :", length(remaining_names), "\n")
-  cat(sprintf("PHYSICAL RHO    : %.6f\n", rho_val))
+  cat(sprintf("Stripping Mode           : %s\n", strip_mode))
+  cat(sprintf("Dropped Components       : %s\n", paste(dropped_names, collapse=", ")))
+  cat(sprintf("Physical Rho (IR-based)  : %.6f\n", rho_val))
   cat("----------------------------------------------------------\n")
   
-  status <- ifelse(rho_val > 0.95, "ULTRA STABLE",
-            ifelse(rho_val > 0.90, "STABLE", "INCOHERENT / TURBULENT"))
-  
-  cat(sprintf("SYSTEM STATUS   : %s\n", status))
-  cat("==========================================================\n")
-  
-  # VISUAL VALIDATION: LAMINAR FLOW CHECK (Rank Invariance)
-  plot(rank(ir_full[remaining_names]), rank(ir_red),
-       pch=21, bg="#2ECC71", col="#27AE60", cex=2,
-       main=paste("Target Stripped:", paste(target_names, collapse=" ")),
-       xlab="Original Physical Rank", ylab="New Subcompositional Rank")
-  abline(0, 1, lty=2, col="red")
-  text(min(rank(ir_full[remaining_names])), max(rank(ir_red)), 
-       labels=paste("Rho =", round(rho_val, 4)), pos=4, font=2)
-
-  return(list(rho = rho_val, remaining = remaining_names))
+  return(list(rho = rho_val, dropped = dropped_names, cleansed_data = P_reduced))
 }
 
-# --- EXECUTION EXAMPLE ---
-# Example: Strip the top 2 drivers to see if the core system stabilizes.
-# my_targets <- c("Taxon_1", "Taxon_2") 
- 
-result <- verify_pinpoint_stripping(Universal_Reliable_Taxa_ZeroFree, my_targets, global_eff_lib)
+# --- HOW TO USE ---
+
+# Example 1: Drop specific taxa by name
+# result <- analyze_physical_coherence_v18_manual(Dataset, manual_drop_names = c("Taxon_A", "Taxon_B"))
+
+# Example 2: Use original auto-drop (just leave manual_drop_names as NULL)
+# result <- analyze_physical_coherence_v18_manual(Dataset, drop_ratio = 0.15)
