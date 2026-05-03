@@ -96,7 +96,9 @@ print(head(stability_report, n_t), row.names = FALSE)
 cat("----------------------------------------------------------\n")
 cat("DEFINITION:\n")
 cat("  - Invariance_Ratio (IR): Ratio of observed vs theoretical noise.\n")
+cat("  - Invariance_Ratio (IR) = zero is suspected noise data.\n")
 cat("  - Physical_Deviation (Sp): Stability score (Lower is more Stable).\n")
+cat("  - Physical_Deviation (Sp) = zero is suspected noise data.\n")
 cat("==========================================================\n")
 
 # Optional: Visualization of Physical Deviation
