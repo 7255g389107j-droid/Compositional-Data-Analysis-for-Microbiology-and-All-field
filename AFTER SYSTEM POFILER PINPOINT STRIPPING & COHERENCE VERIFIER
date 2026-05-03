@@ -7,6 +7,7 @@
 # Universal_Reliable_Taxa_ZeroFree <- read.table("clipboard", header=TRUE, sep="\t", na.strings=c("", "NA"), dec=".", fill=TRUE, quote="\"", comment.char="", strip.white=TRUE, fileEncoding="UTF-8")
 
 global_eff_lib <- 1 / mean(apply(dataset_numeric, 1, function(x) min(x[x > 0])))
+baseline_means <- colMeans(Dataset)
 
 verify_pinpoint_stripping <- function(Universal_Reliable_Taxa_ZeroFree, target_taxa_to_remove, global_eff_lib) {
   
@@ -16,12 +17,12 @@ verify_pinpoint_stripping <- function(Universal_Reliable_Taxa_ZeroFree, target_t
   calc_ir <- function(dat, lib) {
     L <- log(dat)
     obs_v <- apply(L, 2, var)
-    theo_v <- 1 / (colMeans(dat) * lib)
+    theo_v <- 1 / (ref_means[names(obs_v)] * lib)
     return(obs_v / theo_v)
   }
     
     
-  ir_full <- calc_ir(Universal_Reliable_Taxa_ZeroFree, eff_lib)
+  ir_full <- calc_ir(Universal_Reliable_Taxa_ZeroFree, eff_lib, baseline_means)
   all_names <- colnames(Universal_Reliable_Taxa_ZeroFree)
   
   # 3. EXCLUSION OF TARGETED COMPONENTS
@@ -43,7 +44,7 @@ verify_pinpoint_stripping <- function(Universal_Reliable_Taxa_ZeroFree, target_t
   
   
   # 5. RE-CALCULATION OF IR FOR THE SUBCOMPOSITION
-  ir_red <- calc_ir(P_reduced, eff_lib)
+  ir_red <- calc_ir(P_reduced, eff_lib, baseline_means)
   
   # 6. PHYSICAL INTEGRITY ASSESSMENT (Spearman's Rho)
   # Assess the invariance of the physical ranking (Original vs. Subcomposition).
