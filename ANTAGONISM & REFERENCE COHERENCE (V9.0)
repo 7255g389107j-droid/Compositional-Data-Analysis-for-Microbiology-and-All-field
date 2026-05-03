@@ -3,6 +3,7 @@
 # -----------------------------------------------------------------
 # Feature: Comprehensive Evaluation of Component-wise Contention
 # Logic: All-to-all pair comparison (Ohta's Asymmetry Matrix)
+# After stripping, ≥ 5 components are necessary.
 # Developed by: Tatsuki Itagaki
 # Copyright (c) 2026 Tatsuki Itagaki
 # License: MIT License (https://opensource.org)
@@ -63,6 +64,7 @@ status <- ifelse(antagonistic_index > 0.8, "CRITICAL ANTAGONISM",
   cat("      KEY DIFFERENCES IN V9.0 (ANTAGONISM FOCUS)          \n")
   cat("==========================================================\n")
   cat(sprintf("1. ALL-TO-ALL PAIRS    : Total %d combinations evaluated.\n", n_taxa^2))
+  cat("After stripping, ≥ 5 components are necessary.\n")
   cat(sprintf("2. ANTAGONISTIC ENTROPY: S_ant = %.6f\n", S_ant))
   cat("   (Measures if wins are distributed evenly vs. concentrated)\n\n")
   cat(sprintf("3. TOP-TIER GAP        : G_top = %.6f\n", G_top))
@@ -70,7 +72,7 @@ status <- ifelse(antagonistic_index > 0.8, "CRITICAL ANTAGONISM",
   cat(sprintf("4. ANTAGONISM INDEX    : AI = %.6f\n", antagonistic_index))
   cat("   (High AI indicates a system with no dominant reference)\n")
   cat("==========================================================\n")
-cat("----------------------------------------------------------\n")
+  cat("----------------------------------------------------------\n")
   cat(sprintf("SYSTEM STATUS: %s\n", status))
   cat("==========================================================\n")
 
