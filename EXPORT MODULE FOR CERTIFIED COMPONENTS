@@ -1,0 +1,61 @@
+# =================================================================
+# ITAGAKI-SYSTEM: EXPORT MODULE FOR CERTIFIED COMPONENTS
+# -----------------------------------------------------------------
+# Objective: Extract and export "Physically Certified Components" 
+#            that achieved Rho > 0.90 (Structural Invariance).
+# Developed by: Tatsuki Itagaki
+# Copyright (c) 2026 Tatsuki Itagaki
+# License: MIT License (https://opensource.org)
+# 
+# ACADEMIC CITATION:
+# If you use this software or its logic in your research, 
+# please cite the following works:
+# Itagaki, T (2024). DOI: 10.20944/preprints202402.0275.v3
+# Itagaki, T (2024). DOI: 10.3390/microorganisms12071484
+# Itagaki, T (2025). DOI: 10.3390/nu17233681
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.21953.93284
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.35015.25762
+# =================================================================
+
+# 1. Final Validation of Physical Coherence (Rho)
+if (result$rho > 0.90) {
+  
+  cat("\n[STATUS] Physical Coherence Test: PASSED (Rho =", round(result$rho, 6), ")\n")
+  
+  # 2. Identify Certified Components 
+  # (Stable taxa remaining after stripping top IR drivers)
+  certified_taxa_names <- colnames(result$cleansed_data)
+  
+  # 3. Extract Raw Data for Certified Components
+  # Note: These components have already cleared the 10x systemic noise floor.
+  P_raw <- as.matrix(Dataset)
+  P_certified_raw <- P_raw[, certified_taxa_names, drop = FALSE]
+  
+  # 4. Define Output Filenames
+  filename_raw  <- "ITAGAKI_V18_CERTIFIED_RAW_DATA.csv"
+  filename_meta <- "ITAGAKI_V18_CERTIFIED_METADATA.csv"
+  
+  # 5. Export Raw Data (Rows = Samples, Columns = Components)
+  write.csv(P_certified_raw, filename_raw, row.names = TRUE)
+  
+  # 6. Generate and Export Metadata (Certificate of Reliability)
+  certified_metadata <- data.frame(
+    Component_Name = certified_taxa_names,
+    Baseline_IR    = round(result$ir_full[certified_taxa_names], 4),
+    Reliability    = "PHYSICALLY_CERTIFIED",
+    System_Rho     = round(result$rho, 6)
+  )
+  write.csv(certified_metadata, filename_meta, row.names = FALSE)
+  
+  cat("----------------------------------------------------------\n")
+  cat(sprintf("SUCCESS: %d components designated as 'Physically Certified'.\n", length(certified_taxa_names)))
+  cat(sprintf("Data Exported to      : %s\n", filename_raw))
+  cat(sprintf("Metadata Exported to  : %s\n", filename_meta))
+  cat("----------------------------------------------------------\n")
+  
+} else {
+  
+  cat("\n[WARNING] Physical Coherence below critical threshold (Rho <= 0.90).\n")
+  cat("The system is physically sensitive to outliers. Export aborted to maintain data integrity.\n")
+  
+}
