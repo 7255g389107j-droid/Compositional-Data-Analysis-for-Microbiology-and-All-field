@@ -98,6 +98,7 @@ cat("      ITAGAKI SYSTEM V2026: FINAL DIAGNOSTIC REPORT       \n")
 cat("==========================================================\n")
 cat(sprintf("Global Noise Floor  : %.2e\n", min(sample_minima)))
 cat(sprintf("Reliable Taxa Count : %d\n", ncol(P_reliable)))
+cat("Reliable Taxa Count is nessessary more than 5 taxa.\n")
 cat(sprintf("System Status       : %s\n", ifelse(mean(sp_values) < 0.4, "LAMINAR", "TURBULENT")))
 cat("----------------------------------------------------------\n")
 
@@ -113,7 +114,7 @@ if(nrow(targets) > 0) {
   )
   results_df <- results_df[order(-results_df$Score), ]
   cat("PHYSICAL SINGULARITIES (Detected True Drivers):\n")
-  print(head(results_df, 15), row.names = FALSE)
+  print(head(results_df), row.names = FALSE)
 } else {
   cat("No physical singularities detected above threshold.\n")
 }
