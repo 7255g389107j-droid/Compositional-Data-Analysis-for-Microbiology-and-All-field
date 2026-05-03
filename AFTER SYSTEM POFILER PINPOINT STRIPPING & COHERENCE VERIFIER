@@ -37,10 +37,9 @@ verify_pinpoint_stripping <- function(Universal_Reliable_Taxa_ZeroFree, target_t
     stop("CRITICAL ERROR: Insufficient components remaining. Excessive stripping detected.")
   }
   
-  # 4. SUBCOMPOSITIONAL RE-CLOSING
+  # 4. SUBCOMPOSITIONAL
   P_reduced <- Universal_Reliable_Taxa_ZeroFree[, remaining_names, drop = FALSE]
-  # Physical Reconstruction: Ensure the subcomposition closes to 1.
-  P_reduced <- sweep(P_reduced, 1, rowSums(P_reduced), "/") 
+  
   
   # 5. RE-CALCULATION OF IR FOR THE SUBCOMPOSITION
   ir_red <- calc_ir(P_reduced, eff_lib)
