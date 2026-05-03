@@ -26,7 +26,7 @@
 # =================================================================
 
 # --- [0. OPERATOR CONFIGURATION] ---
-manual_threshold <- 0.0001
+# Use only for time-series data.
 snr_sensitivity  <- 1.8    # SNR: Drift correction intensity, It would be best not to lower it any further.
                            # Setting snr_sensitivity to 1.0e+31 negates the lag in the decrease.
 pass_snr_limit   <- 2.0    # User-defined SNR Threshold
@@ -34,7 +34,7 @@ pass_snr_limit   <- 2.0    # User-defined SNR Threshold
 set.seed(42)
 
 # --- [1. DATA PURIFICATION & SYSTEM METRICS] ---
-raw_m <- as.matrix(Dataset[, colSums(Dataset == 0) == 0])
+raw_m <- as.matrix(universal_reliable_taxa_data[, colSums(universal_reliable_taxa_data == 0) == 0])
 valid_mask <- apply(raw_m, 2, function(x) all(x >= manual_threshold))
 d_m <- sweep(raw_m[, valid_mask], 1, rowSums(raw_m[, valid_mask]), "/")
 n_s <- nrow(d_m); n_t <- ncol(d_m); t_names <- colnames(d_m)
