@@ -1,6 +1,8 @@
 # ITAGAKI-SYSTEM FOR MICROBIOLOGY
-### Physical-Diagnostic Framework for Compositional Data Analysis on Microbiology
+### Physical-Diagnostic Framework for Compositional Data Analysis on Microbioology and All field 
 **Compositional data** is defined as data in which variables are normalized within each sample and the sum of the variables is a constant.
+
+I have established a definitive suite of algorithms to identify Invariant Components. In a world where each dimension of Euclidean space fluctuates independently, the only salvation is to discover the "Unchanging Dimension" (Invariant Component).By utilizing this invariant component as a fixed reference (Anchor), the Absolute Quantity Ratio can be reconstructed through ALR (Additive Log-Ratio) transformation applied exclusively to UTR (Universally Reliable Taxa)—defined as components with non-zero values and a signal strength at least 10x the noise floor in all samples.Without an invariant component, the system is reduced to mere Chaos or Noise, where no scientific understanding can be attained. One must accept the boundary of the unknown when the Invariance is absent from the Compositional Data.
 
 ## Overview
 **ITAGAKI-SYSTEM** is a rigorous computational framework developed to overcome the fundamental limitations of compositional data analysis in biological sciences. Conventional statistical methods (PCA, Pearson Correlation, CLR-transform) often fail or produce spurious results when dealing with datasets characterized by **extreme scale gaps (10^1 to 10^11)** in sample total abundance (Effective Library Size).
