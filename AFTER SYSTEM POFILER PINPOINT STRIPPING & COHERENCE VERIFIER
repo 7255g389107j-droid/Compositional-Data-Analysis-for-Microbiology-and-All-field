@@ -4,7 +4,7 @@
 # Objective: Evaluate the physical integrity of the remaining system 
 #            after excluding specific targeted components.
 
-Universal_Reliable_Taxa_ZeroFree <- read.table("clipboard", header=TRUE, sep="\t", na.strings=c("", "NA"), dec=".", fill=TRUE, 
+# Universal_Reliable_Taxa_ZeroFree <- read.table("clipboard", header=TRUE, sep="\t", na.strings=c("", "NA"), dec=".", fill=TRUE, 
   quote="\"", comment.char="", strip.white=TRUE, fileEncoding="UTF-8")
 
 verify_pinpoint_stripping <- function(Universal_Reliable_Taxa_ZeroFree, target_taxa_to_remove, global_eff_lib) {
