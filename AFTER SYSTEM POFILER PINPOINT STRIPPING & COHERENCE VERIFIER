@@ -4,8 +4,9 @@
 # Objective: Evaluate the physical integrity of the remaining system 
 #            after excluding specific targeted components.
 
-# Universal_Reliable_Taxa_ZeroFree <- read.table("clipboard", header=TRUE, sep="\t", na.strings=c("", "NA"), dec=".", fill=TRUE, 
-  quote="\"", comment.char="", strip.white=TRUE, fileEncoding="UTF-8")
+# Universal_Reliable_Taxa_ZeroFree <- read.table("clipboard", header=TRUE, sep="\t", na.strings=c("", "NA"), dec=".", fill=TRUE, quote="\"", comment.char="", strip.white=TRUE, fileEncoding="UTF-8")
+
+global_eff_lib <- 1 / mean(apply(dataset_numeric, 1, function(x) min(x[x > 0])))
 
 verify_pinpoint_stripping <- function(Universal_Reliable_Taxa_ZeroFree, target_taxa_to_remove, global_eff_lib) {
   
@@ -78,9 +79,5 @@ verify_pinpoint_stripping <- function(Universal_Reliable_Taxa_ZeroFree, target_t
 # --- EXECUTION EXAMPLE ---
 # Example: Strip the top 2 drivers to see if the core system stabilizes.
 # my_targets <- c("Taxon_1", "Taxon_2") 
-
-# 1.
-global_eff_lib <- 1 / mean(apply(Dataset, 1, function(x) min(x[x > 0])))
-
-# 2. 
+ 
 result <- verify_pinpoint_stripping(Universal_Reliable_Taxa_ZeroFree, my_targets, global_eff_lib)
