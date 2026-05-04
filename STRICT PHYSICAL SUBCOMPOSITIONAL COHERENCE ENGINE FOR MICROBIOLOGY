@@ -67,7 +67,7 @@ analyze_physical_coherence_v18_integrated <- function(Dataset,
   remaining_names <- names(ir_red)
   
   # --- 4. COHERENCE METRICS ---
-  rho_val <- cor(ir_full[remaining_names], ir_red, method = "spearman")
+  rho_val <- cor(ir_full[remaining_names], ir_red, method = "pearson")
   
   # --- 5. VISUALIZATION: THE SURVIVAL PLOT ---
   par(mfrow=c(1,1), mar=c(5,5,4,2), bg = "#FDFDFD")
