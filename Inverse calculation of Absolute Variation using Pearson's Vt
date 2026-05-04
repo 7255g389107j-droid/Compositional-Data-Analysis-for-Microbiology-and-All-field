@@ -13,7 +13,7 @@
 # Itagaki, T (2025). DOI: 10.3390/nu17233681
 # =================================================================
 
-reconstruct_absolute_variation <- function(Dataset, invariant_anchor_name) {
+reconstruct_absolute_variation <- function(Dataset, anchor_name) {
   
   # --- 1. PHYSICAL FILTERING (UTR DEFINITION) ---
   P_raw <- as.matrix(Dataset)
