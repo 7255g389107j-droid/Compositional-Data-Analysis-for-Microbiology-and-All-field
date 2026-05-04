@@ -16,10 +16,9 @@
 # Itagaki, T (2026).  DOI: 10.13140/RG.2.2.35655.05287
 
 
-analyze_physical_coherence_v18_manual <- function(Dataset, 
-                                                  drop_ratio,          
-                                                  manual_drop_names = NULL) {
-  
+  analyze_physical_coherence_v18_manual <- function(Dataset, 
+                                                    drop_ratio, 
+                                                    manual_drop_names = NULL) {
   # --- 1. INITIALIZATION ---
   P_raw <- as.matrix(Dataset)
   n_s <- nrow(P_raw)
@@ -52,6 +51,7 @@ analyze_physical_coherence_v18_manual <- function(Dataset,
   # --- 2. LOGIC: STRIPPING PHASE (MANUAL vs AUTOMATIC) ---
   if (!is.null(manual_drop_names)) {
     # Check if specified names exist in the cleaned dataset
+    P_reduced <- P_clean[, -drop_indices, drop = FALSE]
     dropped_names <- intersect(manual_drop_names, comp_names)
     if (length(dropped_names) == 0) stop("ERROR: None of the specified names found in the dataset.")
     
@@ -63,6 +63,9 @@ analyze_physical_coherence_v18_manual <- function(Dataset,
     drop_indices <- order(ir_full, decreasing = TRUE)[1:n_drop]
     dropped_names <- comp_names[drop_indices]
     strip_mode <- paste0("AUTO (Top ", drop_ratio * 100, "% IR)")
+　　if(ncol(P_reduced) < 5) {
+  　stop(sprintf("CRITICAL ERROR: Only %d components remain. Stripping aborted.", ncol(P_reduced)))
+　}
   }
   
   # --- 3. RE-CALCULATION & COHERENCE ---
