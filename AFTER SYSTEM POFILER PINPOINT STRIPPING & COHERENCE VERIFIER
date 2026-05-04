@@ -79,7 +79,7 @@ analyze_physical_coherence_v18_manual <- function(Dataset,
   cat(sprintf("Physical Pearson's r (IR-based)  : %.6f\n", rho_val))
   cat("----------------------------------------------------------\n")
   
-  return(list(rho = rho_val, dropped = dropped_names, cleansed_data = P_reduced))
+  return(list(Pearson's r = rho_val, dropped = dropped_names, cleansed_data = P_reduced))
 }
 
 # --- HOW TO USE ---
