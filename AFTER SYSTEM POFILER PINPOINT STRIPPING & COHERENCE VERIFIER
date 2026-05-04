@@ -51,7 +51,6 @@
   # --- 2. LOGIC: STRIPPING PHASE (MANUAL vs AUTOMATIC) ---
   if (!is.null(manual_drop_names)) {
     # Check if specified names exist in the cleaned dataset
-    P_reduced <- P_clean[, -drop_indices, drop = FALSE]
     dropped_names <- intersect(manual_drop_names, comp_names)
     if (length(dropped_names) == 0) stop("ERROR: None of the specified names found in the dataset.")
     
