@@ -82,10 +82,10 @@
   cat("==========================================================\n")
   cat(sprintf("Stripping Mode           : %s\n", strip_mode))
   cat(sprintf("Dropped Components       : %s\n", paste(dropped_names, collapse=", ")))
-  cat(sprintf("Physical Pearson's r (IR-based)  : %.6f\n", rho_val))
+  cat(sprintf("Physical Rho (IR-based)  : %.6f\n", rho_val))
   cat("----------------------------------------------------------\n")
-  
-  return(list(Pearson's r = rho_val, dropped = dropped_names, cleansed_data = P_reduced))
+
+  return(list(Rho = rho_val, dropped = dropped_names, cleansed_data = P_reduced))
 }
 
 # --- HOW TO USE ---
