@@ -68,7 +68,7 @@ analyze_physical_coherence_v18_manual <- function(Dataset,
   
   ir_red <- calc_ir(P_reduced, eff_lib)
   remaining_names <- names(ir_red)
-  rho_val <- cor(ir_full[remaining_names], ir_red, method = "spearman")
+  rho_val <- cor(ir_full[remaining_names], ir_red, method = "pearson")
   
   # --- 4. OUTPUT REPORT ---
   cat("\n==========================================================\n")
