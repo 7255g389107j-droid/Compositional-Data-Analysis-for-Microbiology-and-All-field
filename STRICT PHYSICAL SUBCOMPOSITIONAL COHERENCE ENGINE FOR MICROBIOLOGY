@@ -79,7 +79,7 @@ analyze_physical_coherence_v18_integrated <- function(Dataset,
   abline(0, 1, lty=2, col="#7F8C8D", lwd=2)
   grid(col="gray90")
   legend("topleft", bty="n", text.font=2, cex=1.2,
-         legend=c(paste("Physical Rho:", round(rho_val, 6)),
+         legend=c(paste("Physical Pearson's r:", round(rho_val, 6)),
                   paste("Components Left:", length(remaining_names)),
                   paste("Status:", ifelse(rho_val > 0.9, "STABLE", "SENSITIVE"))))
 
@@ -89,7 +89,7 @@ analyze_physical_coherence_v18_integrated <- function(Dataset,
   cat("==========================================================\n")
   cat(sprintf("Analyzed Components      : %d\n", length(ir_full)))
   cat(sprintf("Dropped Drivers (Top IR) : %d (%.1f%% of system)\n", n_drop, drop_ratio * 100))
-  cat(sprintf("Physical Rho (IR-based)  : %.6f\n", rho_val))
+  cat(sprintf("Physical Pearson's r (IR-based)  : %.6f\n", rho_val))
 　cat("Rho = 1 is suspicious Dataset.\n")
   cat("----------------------------------------------------------\n")
   
