@@ -1,7 +1,7 @@
 # =================================================================
 # ITAGAKI-SYSTEM V2026.4.30: Individual PROFILER
 # Feature: Strict Zero-Exclusion & Physical Reliability Mapping
-# Logic: Zero = Absent; Reliable = Non-Zero & > 10x Noise Floor
+# Logic: Zero = Undetected; Reliable = Non-Zero & > 10x Noise Floor
 # Developed by: Tatsuki Itagaki
 # Copyright (c) 2026 Tatsuki Itagaki
 # License: MIT License (https://opensource.org)
@@ -109,7 +109,7 @@ cat("==========================================================\n")
 cat(sprintf("PDF Report saved as: %s\n", pdf_file))
 
 # --- 1. RELIABILITY MATRIX GENERATION ---
-# 0: Absent, 1: Uncertain, 2: Reliable
+# 0: Undetected, 1: Uncertain, 2: Reliable
 Rel_Mat <- matrix(0, nrow = nrow(P_raw), ncol = ncol(P_raw),
                   dimnames = list(rownames(P_raw), colnames(P_raw)))
 
@@ -148,7 +148,7 @@ axis(2, at = 1:nrow(Rel_Mat), labels = rownames(Rel_Mat), las = 1, cex.axis = 0.
 
 # Add Legend
 legend(x = ncol(Rel_Mat) * 1.05, y = nrow(Rel_Mat),
-       legend = c("Reliable (>=10x Floor)", "Uncertain (Presence)", "Absent (Zero)"),
+       legend = c("Reliable (>=10x Floor)", "Uncertain (Presence)", "Undetected (Zero)"),
        fill = rev(my_colors),
        xpd = TRUE, bty = "n", cex = 0.8)
 
@@ -164,7 +164,7 @@ pdf(pdf_file, width = 15, height = 10)
 layout(matrix(c(1, 2), nrow = 1), widths = c(0.85, 0.15))
 
 # --- 2. RELIABILITY MATRIX GENERATION ---
-# 0: Absent, 1: Uncertain, 2: Reliable
+# 0: Undetected, 1: Uncertain, 2: Reliable
 Rel_Mat <- matrix(0, nrow = nrow(P_raw), ncol = ncol(P_raw),
                   dimnames = list(rownames(P_raw), colnames(P_raw)))
 
@@ -210,7 +210,7 @@ par(mar = c(0, 0, 0, 0))
 plot.new()
 
 legend("center",
-       legend = c("Reliable (>=10x Floor)", "Uncertain (Presence)", "Absent (Zero)"),
+       legend = c("Reliable (>=10x Floor)", "Uncertain (Presence)", "Undetected (Zero)"),
        fill = rev(status_colors),
        border = "black",
        bty = "n",
